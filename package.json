@@ -1,0 +1,11 @@
+{
+  "name": "kho-mu-tbs",
+  "version": "1.0.0",
+  "description": "He thong Quan ly Kho Mu TBS (GitHub Pages Camera + Apps Script + Google Sheets)",
+  "scripts": {
+    "check": "node scripts/setup-va-deploy.js --check",
+    "deploy-gas": "node scripts/setup-va-deploy.js --gas",
+    "deploy-git": "node scripts/setup-va-deploy.js --git",
+    "deploy": "node scripts/setup-va-deploy.js --all"
+  }
+}
