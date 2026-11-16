@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
 <style>
@@ -27,14 +28,14 @@
   /* Semantic */
   --brand:var(--teal-700);
   --brand-l:var(--teal-500);
-  --grad:linear-gradient(135deg,#0d9488 0%,#0891b2 55%,#0284c7 100%);
-  --bg:var(--slate-50);
-  --surface:rgba(255,255,255,.94);
+  --grad:linear-gradient(135deg,#0D9488 0%,#0284C7 100%);
+  --bg:#F1F5F9;
+  --surface:rgba(255,255,255,.96);
   --surface-solid:#ffffff;
   --ink:var(--slate-900);
   --ink-2:var(--slate-700);
   --muted:var(--slate-500);
-  --line:var(--slate-200);
+  --line:#E2E8F0;
   --line-strong:var(--slate-300);
 
   --c-in:var(--emerald-600);--c-in-bg:var(--emerald-50);--c-in-bd:#a7f3d0;
@@ -78,19 +79,62 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 
 /* =====================================================================
-   HEADER & NAVIGATION
+   APP SHELL, LEFT VERTICAL SIDEBAR & HEADER
    ===================================================================== */
+.app-shell{display:flex;min-height:100dvh;align-items:stretch}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.side-nav{
+  display:none;width:252px;flex:0 0 252px;
+  position:sticky;top:0;height:100dvh;overflow-y:auto;z-index:42;
+  background:rgba(255,255,255,.95);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border-right:1px solid var(--line);box-shadow:4px 0 24px rgba(15,23,42,.04);
+  padding:16px 12px;flex-direction:column;gap:6px;transition:width .2s var(--ease),flex-basis .2s var(--ease);
+}
+.side-head{
+  display:flex;align-items:center;gap:11px;padding:6px 8px 14px;
+  border-bottom:1px solid var(--slate-100);margin-bottom:4px;
+}
+.side-grp{
+  font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);padding:10px 10px 4px;
+}
+.side-menu{display:flex;flex-direction:column;gap:4px;flex:1}
+.side-btn{
+  display:flex;align-items:center;gap:11px;width:100%;min-height:44px;padding:9px 12px;
+  border-radius:12px;font-size:13.8px;font-weight:600;color:var(--ink-2);text-align:left;
+  transition:all .16s var(--ease);position:relative;
+}
+.side-btn:hover{background:var(--slate-100);color:var(--ink);transform:translateX(2px)}
+.side-btn.on{
+  background:var(--grad);color:#fff;font-weight:700;
+  box-shadow:0 6px 16px rgba(13,148,136,.28);
+}
+.side-btn .ico svg{width:19px;height:19px}
+.side-badge{
+  margin-left:auto;font-size:10px;font-weight:800;padding:2px 6px;border-radius:999px;
+  background:var(--teal-100);color:var(--teal-700);white-space:nowrap;flex:0 0 auto;
+}
+.side-btn.on .side-badge{background:rgba(255,255,255,.24);color:#fff}
+.side-foot{
+  margin-top:auto;padding-top:12px;border-top:1px solid var(--slate-100);
+  display:flex;flex-direction:column;gap:6px;
+}
+.side-user{font-size:12px;color:var(--muted);padding:4px 8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-nav.collapsed{width:76px;flex:0 0 76px;padding:16px 8px}
+.side-nav.collapsed .brand-txt,.side-nav.collapsed .side-grp,.side-nav.collapsed .side-btn span,.side-nav.collapsed .side-badge,.side-nav.collapsed .side-user{display:none}
+.side-nav.collapsed .side-head,.side-nav.collapsed .side-btn{justify-content:center;padding-left:0;padding-right:0}
+
 .app-header{
   position:sticky;top:0;z-index:40;
-  background:rgba(255,255,255,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-  border-bottom:1px solid rgba(226,232,240,.9);
+  background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid #E2E8F0;
   box-shadow:0 4px 20px rgba(15,23,42,.04);
   padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));
 }
-.header-inner{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.header-inner{max-width:1360px;margin:0 auto;display:flex;align-items:center;gap:12px}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
 .brand-mark{
-  width:38px;height:38px;border-radius:12px;background:var(--grad);color:#fff;
+  width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#0D9488 0%,#0284C7 100%);color:#fff;
   display:grid;place-items:center;box-shadow:0 6px 16px rgba(13,148,136,.32);flex:0 0 auto;
 }
 .brand-txt{min-width:0}
@@ -101,27 +145,20 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   display:grid;place-items:center;transition:background .15s var(--ease);
 }
 .h-back:hover{background:var(--slate-200)}
-.top-nav{display:none;gap:4px;margin-left:14px;flex:1;min-width:0}
-.top-nav button{
-  display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:11px;
-  font-size:13.5px;font-weight:600;color:var(--ink-2);white-space:nowrap;transition:all .16s var(--ease);
-}
-.top-nav button:hover{background:var(--slate-100);color:var(--ink)}
-.top-nav button.on{background:var(--grad);color:#fff;font-weight:700;box-shadow:0 6px 16px rgba(13,148,136,.28)}
-.top-nav .ico svg{width:17px;height:17px}
+.top-nav{display:none!important}
 
 .sync-pill{
-  margin-left:auto;display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;
-  background:var(--emerald-50);border:1px solid var(--c-in-bd);color:var(--emerald-700);
+  margin-left:auto;display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;
+  background:#DCFCE7;border:1px solid #86EFAC;color:#15803D;
   font-size:12.5px;font-weight:700;white-space:nowrap;flex:0 0 auto;
 }
-.sync-pill .dot{width:8px;height:8px;border-radius:50%;background:var(--emerald-600)}
-.sync-pill.wait{background:var(--amber-50);border-color:var(--c-out-bd);color:var(--amber-700)}
-.sync-pill.wait .dot{background:var(--amber-600);animation:pulseDot 1s infinite}
-.sync-pill.off{background:var(--rose-50);border-color:var(--c-err-bd);color:var(--rose-700)}
-.sync-pill.off .dot{background:var(--rose-600)}
-.sync-pill.demo{background:var(--slate-100);border-color:var(--line-strong);color:var(--ink-2)}
-.sync-pill.demo .dot{background:var(--slate-500)}
+.sync-pill .dot{width:8px;height:8px;border-radius:50%;background:#22C55E;box-shadow:0 0 8px #22C55E}
+.sync-pill.wait{background:#FEF3C7;border-color:#FDE68A;color:#B45309}
+.sync-pill.wait .dot{background:#F59E0B;box-shadow:0 0 8px #F59E0B;animation:pulseDot 1s infinite}
+.sync-pill.off{background:#FFE4E6;border-color:#FECDD3;color:#BE123C}
+.sync-pill.off .dot{background:#E11D48;box-shadow:0 0 8px #E11D48}
+.sync-pill.demo{background:#DCFCE7;border-color:#86EFAC;color:#15803D}
+.sync-pill.demo .dot{background:#22C55E;box-shadow:0 0 8px #22C55E}
 @keyframes pulseDot{50%{opacity:.35;transform:scale(.8)}}
 
 /* Bottom Navigation (Mobile <= 767px) */
@@ -141,15 +178,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .bottom-nav button.on{color:var(--brand);background:var(--teal-50)}
 
 @media (min-width:768px){
-  .top-nav{display:flex}
-  .bottom-nav{display:none}
-  main{padding:24px 24px 60px!important}
+  .side-nav:not([hidden]){display:flex!important}
+  .bottom-nav{display:none!important}
+  .app-header #brandLogo{display:none}
+  main{padding:24px 28px 60px!important}
 }
 
 /* =====================================================================
    MAIN CONTAINER & COMMON SURFACES
    ===================================================================== */
-main{max-width:1240px;margin:0 auto;padding:14px 14px calc(86px + env(safe-area-inset-bottom));min-width:0}
+main{max-width:1360px;width:100%;margin:0 auto;padding:14px 14px calc(86px + env(safe-area-inset-bottom));min-width:0}
 section{animation:fadeUp .22s var(--ease)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
@@ -200,12 +238,12 @@ section{animation:fadeUp .22s var(--ease)}
 
 /* Badges */
 .tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
-.tag-NHAP{background:var(--c-in-bg);color:var(--emerald-700);border:1px solid var(--c-in-bd)}
-.tag-XUAT{background:var(--c-out-bg);color:var(--amber-700);border:1px solid var(--c-out-bd)}
-.tag-KIEMKE{background:var(--c-cnt-bg);color:var(--sky-700);border:1px solid var(--c-cnt-bd)}
+.tag-NHAP{background:#DCFCE7;color:#15803D;border:1px solid #BBF7D0}
+.tag-XUAT{background:#FFEDD5;color:#C2410C;border:1px solid #FED7AA}
+.tag-KIEMKE{background:#E0F2FE;color:#0369A1;border:1px solid #BAE6FD}
 .tag-err{background:var(--c-err-bg);color:var(--rose-700);border:1px solid var(--c-err-bd)}
-.tag-ok{background:var(--emerald-50);color:var(--emerald-700);border:1px solid var(--c-in-bd)}
-.tag-warn{background:var(--amber-50);color:var(--amber-700);border:1px solid var(--c-out-bd)}
+.tag-ok{background:#DCFCE7;color:#15803D;border:1px solid #BBF7D0}
+.tag-warn{background:#FFEDD5;color:#C2410C;border:1px solid #FED7AA}
 
 /* =====================================================================
    LOGIN SCREEN
@@ -222,56 +260,89 @@ section{animation:fadeUp .22s var(--ease)}
 }
 
 /* =====================================================================
-   DASHBOARD (HOME)
+   DASHBOARD (HOME) — 4 KPI CARDS, 3 HERO CARDS, 4 QUICK CARDS
    ===================================================================== */
 .kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
 @media (min-width:768px){.kpi-grid{grid-template-columns:repeat(4,1fr);gap:14px}}
 .kpi-card{
-  position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--rad);padding:14px 16px;box-shadow:var(--shadow-sm);
-}
-.kpi-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--k-acc,var(--brand-l))}
-.kpi-card:nth-child(2){--k-acc:var(--sky-600)}
-.kpi-card:nth-child(3){--k-acc:var(--indigo-600)}
-.kpi-card:nth-child(4){--k-acc:var(--amber-600)}
-.kpi-lbl{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
-.kpi-val{font-size:26px;font-weight:800;letter-spacing:-.03em;color:var(--ink);margin-top:4px;line-height:1.15}
-.kpi-sub{font-size:12px;color:var(--muted);margin-top:4px}
-.bar-track{height:6px;background:var(--slate-100);border-radius:99px;overflow:hidden;margin-top:8px}
-.bar-fill{height:100%;background:var(--grad);border-radius:99px;transition:width .35s var(--ease)}
-
-.action-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:14px}
-@media (min-width:640px){.action-grid{grid-template-columns:repeat(3,1fr);gap:12px}}
-.act-tile{
-  position:relative;display:flex;align-items:center;gap:14px;padding:18px;border-radius:var(--rad-lg);
-  color:#fff;text-align:left;box-shadow:var(--shadow-md);min-height:94px;
+  position:relative;overflow:hidden;background:#FFFFFF;border:1px solid #E2E8F0;
+  border-top:3px solid #0D9488;
+  border-radius:var(--rad);padding:15px 16px;box-shadow:var(--shadow-sm);
   transition:transform .16s var(--ease),box-shadow .16s var(--ease);
 }
-.act-tile:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.kpi-card.k-teal{border-top-color:#0D9488;background:linear-gradient(180deg,#F0FDFA 0%,#FFFFFF 100%)}
+.kpi-card.k-teal .kpi-val{color:#0F766E}
+.kpi-card.k-teal .kpi-ico{background:#CCFBF1;color:#0D9488}
+.kpi-card.k-blue{border-top-color:#2563EB;background:linear-gradient(180deg,#EFF6FF 0%,#FFFFFF 100%)}
+.kpi-card.k-blue .kpi-val{color:#1D4ED8}
+.kpi-card.k-blue .kpi-ico{background:#DBEAFE;color:#2563EB}
+.kpi-card.k-violet{border-top-color:#7C3AED;background:linear-gradient(180deg,#F5F3FF 0%,#FFFFFF 100%)}
+.kpi-card.k-violet .kpi-val{color:#6D28D9}
+.kpi-card.k-violet .kpi-ico{background:#EDE9FE;color:#7C3AED}
+.kpi-card.k-amber{border-top-color:#F59E0B;background:linear-gradient(180deg,#FFFBEB 0%,#FFFFFF 100%)}
+.kpi-card.k-amber .kpi-val{color:#16A34A}
+.kpi-card.k-amber.pending .kpi-val{color:#EA580C}
+.kpi-card.k-amber .kpi-ico{background:#FEF3C7;color:#D97706}
+.kpi-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.kpi-ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:0 0 auto}
+.kpi-ico svg{width:18px;height:18px}
+.kpi-lbl{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.kpi-val{font-size:27px;font-weight:800;letter-spacing:-.03em;color:var(--ink);margin-top:4px;line-height:1.15}
+.kpi-sub{font-size:12px;color:var(--muted);margin-top:4px;font-weight:500}
+.bar-track{height:7px;background:#E2E8F0;border-radius:99px;overflow:hidden;margin-top:8px}
+.bar-fill{height:100%;background:linear-gradient(90deg,#3B82F6 0%,#06B6D4 100%);border-radius:99px;transition:width .35s var(--ease)}
+
+.action-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px}
+@media (min-width:640px){.action-grid{grid-template-columns:repeat(3,1fr);gap:14px}}
+.act-tile{
+  position:relative;display:flex;align-items:center;gap:14px;padding:20px;border-radius:var(--rad-lg);
+  color:#fff;text-align:left;min-height:96px;
+  transition:transform .18s var(--ease),box-shadow .18s var(--ease),filter .18s;
+}
+.act-tile:hover{transform:translateY(-3px);filter:brightness(1.03)}
 .act-tile:active{transform:scale(.98)}
-.act-tile.in{background:linear-gradient(135deg,#059669 0%,#0d9488 100%)}
-.act-tile.out{background:linear-gradient(135deg,#d97706 0%,#ea580c 100%)}
-.act-tile.cnt{background:linear-gradient(135deg,#0284c7 0%,#0e7490 100%)}
+.act-tile.in{
+  background:linear-gradient(135deg,#059669 0%,#10B981 50%,#34D399 100%);
+  box-shadow:0 12px 24px -6px rgba(16,185,129,.45);
+}
+.act-tile.in:hover{box-shadow:0 16px 30px -5px rgba(16,185,129,.6)}
+.act-tile.out{
+  background:linear-gradient(135deg,#EA580C 0%,#F97316 55%,#FB923C 100%);
+  box-shadow:0 12px 24px -6px rgba(249,115,22,.45);
+}
+.act-tile.out:hover{box-shadow:0 16px 30px -5px rgba(249,115,22,.6)}
+.act-tile.cnt{
+  background:linear-gradient(135deg,#0369A1 0%,#0284C7 55%,#06B6D4 100%);
+  box-shadow:0 12px 24px -6px rgba(2,132,199,.45);
+}
+.act-tile.cnt:hover{box-shadow:0 16px 30px -5px rgba(2,132,199,.6)}
 .act-ico{
-  width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.2);
+  width:52px;height:52px;border-radius:14px;
+  background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.38);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.4);
   display:grid;place-items:center;flex:0 0 auto;
 }
 .act-ico svg{width:28px;height:28px}
 .act-tile b{display:block;font-size:19px;font-weight:800;letter-spacing:-.01em}
-.act-tile small{display:block;font-size:13px;opacity:.92;margin-top:2px}
+.act-tile small{display:block;font-size:13px;opacity:.94;margin-top:2px;font-weight:500}
 @media (min-width:640px){
-  .act-tile{flex-direction:column;align-items:flex-start;justify-content:space-between;min-height:142px}
+  .act-tile{flex-direction:column;align-items:flex-start;justify-content:space-between;min-height:144px}
 }
 
 .quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
-@media (min-width:768px){.quick-grid{grid-template-columns:repeat(4,1fr)}}
+@media (min-width:768px){.quick-grid{grid-template-columns:repeat(4,1fr);gap:14px}}
 .q-tile{
-  display:flex;align-items:center;gap:11px;padding:14px;border-radius:var(--rad);
-  background:#fff;border:1px solid var(--line);box-shadow:var(--shadow-xs);text-align:left;min-height:68px;
-  transition:border-color .16s,transform .15s var(--ease);
+  display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--rad);
+  background:#FFFFFF;border:1px solid #E2E8F0;box-shadow:var(--shadow-xs);text-align:left;min-height:70px;
+  transition:border-color .16s,transform .15s var(--ease),box-shadow .16s;
 }
-.q-tile:hover{border-color:var(--brand-l);transform:translateY(-1px)}
-.q-ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex:0 0 auto;background:var(--slate-100);color:var(--brand)}
+.q-tile:hover{border-color:#94A3B8;transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.q-ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:0 0 auto;background:#E0F2FE;color:#0284C7}
+.q-tile.q-map .q-ico{background:#E0F2FE;color:#0284C7}
+.q-tile.q-find .q-ico{background:#EDE9FE;color:#7C3AED}
+.q-tile.q-log .q-ico{background:#FEF3C7;color:#D97706}
+.q-tile.q-set .q-ico{background:#FFE4E6;color:#E11D48}
 .q-tile b{display:block;font-size:14.5px;font-weight:700;color:var(--ink)}
 .q-tile span{display:block;font-size:12px;color:var(--muted)}
 
@@ -376,6 +447,42 @@ section{animation:fadeUp .22s var(--ease)}
 .cnt-row{display:grid;grid-template-columns:1fr 78px 98px;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px}
 .cnt-row input{height:48px;text-align:center;font-size:20px;font-weight:800;border:1.5px solid var(--line-strong);border-radius:11px;width:100%}
 .cnt-sys{text-align:center;font-size:18px;font-weight:700;color:var(--muted)}
+
+/* =====================================================================
+   ĐỐI CHIẾU FILE KIỂM KÊ & NHẬP - XUẤT - TỒN (KHO ĐẾ STYLE)
+   ===================================================================== */
+.recon-grid{display:grid;gap:10px;grid-template-columns:1fr}
+@media (min-width:680px){.recon-grid{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1080px){.recon-grid{grid-template-columns:145px 145px 1fr 1fr 1fr}}
+.recon-fbox{
+  display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:12px;
+  background:var(--slate-50);border:1.5px dashed var(--line-strong);min-width:0;
+}
+.recon-fbox label{font-size:12px;font-weight:700;color:var(--ink-2)}
+.recon-fbox input[type=file]{font-size:12px;width:100%;cursor:pointer}
+.recon-fbox input[type=date]{min-height:38px;padding:0 10px;font-size:13px;border-radius:9px;border:1px solid var(--line-strong);background:#fff;width:100%}
+.recon-filters{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 10px}
+.r-fbtn{
+  min-height:36px;padding:4px 12px;border-radius:999px;font-size:12.5px;font-weight:700;
+  border:1.5px solid var(--line-strong);background:#fff;color:var(--ink-2);transition:all .14s;
+}
+.r-fbtn:hover{border-color:var(--brand);background:var(--teal-50)}
+.r-fbtn.on{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(13,148,136,.25)}
+.recon-kpis{display:grid;gap:8px;grid-template-columns:repeat(2,1fr);margin-bottom:12px}
+@media (min-width:768px){.recon-kpis{grid-template-columns:repeat(3,1fr)}}
+@media (min-width:1100px){.recon-kpis{grid-template-columns:repeat(6,1fr)}}
+.rk-card{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.rk-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase}
+.rk-val{font-size:15.5px;font-weight:800;color:var(--ink);margin-top:3px;font-variant-numeric:tabular-nums}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow-xs)}
+.recon-tbl{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
+.recon-tbl th,.recon-tbl td{padding:7px 8px;border-bottom:1px solid var(--slate-100);text-align:left;vertical-align:middle}
+.recon-tbl th{background:#f8fafc;color:var(--ink-2);font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:.02em;border-right:1px solid var(--slate-200)}
+.recon-tbl td{border-right:1px solid #f1f5f9}
+.recon-tbl tbody tr:hover td{background:var(--teal-50)!important}
+.d-pos{color:var(--emerald-700);font-weight:800}
+.d-neg{color:var(--rose-700);font-weight:800}
+.d-zero{color:var(--muted);font-weight:600}
 
 /* =====================================================================
    WAREHOUSE MAP (24 RACKS x 3 FLOORS x 4 CELLS)
@@ -511,22 +618,42 @@ section{animation:fadeUp .22s var(--ease)}
 </head>
 <body>
 
-<header class="app-header">
-  <div class="header-inner">
-    <button class="h-back" id="btnBack" hidden aria-label="Quay lại"></button>
-    <div class="brand">
-      <div class="brand-mark" id="brandLogo"></div>
+<div class="app-shell">
+  <aside class="side-nav" id="sideNav" hidden aria-label="Menu dọc bên trái">
+    <div class="side-head">
+      <div class="brand-mark" id="sideLogo"></div>
       <div class="brand-txt">
-        <strong id="title">Kho Mũ TBS</strong>
-        <span id="subTitle">24 kệ · 3 tầng · 4 ô</span>
+        <strong>Kho Mũ TBS</strong>
+        <span>26 kệ · 3 tầng · 4 ô</span>
       </div>
     </div>
-    <nav class="top-nav" id="topNav" hidden></nav>
-    <div class="sync-pill demo" id="sync" hidden><span class="dot"></span><span id="syncTxt">Chế độ thử</span></div>
-  </div>
-</header>
+    <div class="side-menu" id="sideMenu"></div>
+    <div class="side-foot">
+      <div class="side-user" id="sideUser">Quản trị</div>
+      <button type="button" class="side-btn" id="btnToggleSide" title="Thu gọn hoặc mở rộng thanh bên">
+        <span class="ico" id="sideToggleIco"></span>
+        <span>Thu gọn menu</span>
+      </button>
+    </div>
+  </aside>
 
-<main>
+  <div class="app-main">
+    <header class="app-header">
+      <div class="header-inner">
+        <button class="h-back" id="btnBack" hidden aria-label="Quay lại"></button>
+        <div class="brand">
+          <div class="brand-mark" id="brandLogo"></div>
+          <div class="brand-txt">
+            <strong id="title">Kho Mũ TBS</strong>
+            <span id="subTitle">26 kệ · 3 tầng · 4 ô</span>
+          </div>
+        </div>
+        <nav class="top-nav" id="topNav" hidden></nav>
+        <div class="sync-pill demo" id="sync" hidden><span class="dot"></span><span id="syncTxt">Chế độ thử</span></div>
+      </div>
+    </header>
+
+    <main>
   <!-- ĐĂNG NHẬP -->
   <section id="vLogin" hidden>
     <div class="login-wrap">
@@ -535,7 +662,7 @@ section{animation:fadeUp .22s var(--ease)}
           <div class="brand-mark" id="loginLogo"></div>
           <div>
             <h2>Đăng nhập Kho Mũ</h2>
-            <div class="small muted">Quản lý vị trí 24 kệ × 3 tầng × 4 ô</div>
+            <div class="small muted">Quản lý vị trí 26 kệ × 3 tầng × 4 ô</div>
           </div>
         </div>
         <div class="banner-info" id="demoNote" hidden>
@@ -561,25 +688,45 @@ section{animation:fadeUp .22s var(--ease)}
   <!-- TRANG CHỦ -->
   <section id="vHome" hidden>
     <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-lbl">Tổng đôi mũ tồn</div>
-        <div class="kpi-val num-tab" id="stQty">0</div>
-        <div class="kpi-sub">Trên 24 kệ Dãy A &amp; B</div>
+      <div class="kpi-card k-teal">
+        <div class="kpi-top">
+          <div>
+            <div class="kpi-lbl">1. Tổng đôi mũ tồn</div>
+            <div class="kpi-val num-tab" id="stQty">0</div>
+          </div>
+          <div class="kpi-ico" data-ico="database"></div>
+        </div>
+        <div class="kpi-sub">Trên 26 kệ Dãy A &amp; B</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-lbl">Ô đang chứa hàng</div>
-        <div class="kpi-val num-tab" id="stCells">0 / 288</div>
+      <div class="kpi-card k-blue">
+        <div class="kpi-top">
+          <div>
+            <div class="kpi-lbl">2. Ô đang chứa hàng</div>
+            <div class="kpi-val num-tab" id="stCells">0 <span style="color:#94A3B8;font-size:19px;font-weight:700">/ 312</span></div>
+          </div>
+          <div class="kpi-ico" data-ico="map"></div>
+        </div>
         <div class="bar-track"><div class="bar-fill" id="stFillBar" style="width:0%"></div></div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-lbl">Chủng loại mũ</div>
-        <div class="kpi-val num-tab" id="stItems">0</div>
+      <div class="kpi-card k-violet">
+        <div class="kpi-top">
+          <div>
+            <div class="kpi-lbl">3. Chủng loại mũ</div>
+            <div class="kpi-val num-tab" id="stItems">0</div>
+          </div>
+          <div class="kpi-ico" data-ico="scan"></div>
+        </div>
         <div class="kpi-sub">Mã mũ đang theo dõi</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-lbl">Hàng đợi đồng bộ</div>
-        <div class="kpi-val num-tab" id="stPend">0</div>
-        <div class="kpi-sub" id="stSyncNote">Lưu tức thì trên máy</div>
+      <div class="kpi-card k-amber" id="kpiPendCard">
+        <div class="kpi-top">
+          <div>
+            <div class="kpi-lbl">4. Hàng đợi đồng bộ</div>
+            <div class="kpi-val num-tab" id="stPend">0</div>
+          </div>
+          <div class="kpi-ico" data-ico="wifi"></div>
+        </div>
+        <div class="kpi-sub" id="stSyncNote">0 — Khớp Google Sheet</div>
       </div>
     </div>
 
@@ -599,25 +746,25 @@ section{animation:fadeUp .22s var(--ease)}
     </div>
 
     <div class="quick-grid">
-      <button type="button" class="q-tile" data-go="map">
+      <button type="button" class="q-tile q-map" data-go="map">
         <div class="q-ico" data-ico="map"></div>
-        <div><b>Sơ đồ 24 kệ</b><span>288 ô trực quan</span></div>
+        <div><b>Sơ đồ 26 kệ</b><span>312 ô trực quan</span></div>
       </button>
-      <button type="button" class="q-tile" data-go="find">
+      <button type="button" class="q-tile q-find" data-go="find">
         <div class="q-ico" data-ico="search"></div>
         <div><b>Tìm &amp; Danh mục</b><span>Tra vị trí · thêm mã mũ</span></div>
       </button>
-      <button type="button" class="q-tile" data-go="log">
+      <button type="button" class="q-tile q-log" data-go="log">
         <div class="q-ico" data-ico="history"></div>
         <div><b>Lịch sử thao tác</b><span>Nhật ký nhập / xuất</span></div>
       </button>
-      <button type="button" class="q-tile" data-go="settings">
+      <button type="button" class="q-tile q-set" data-go="settings">
         <div class="q-ico" data-ico="settings"></div>
-        <div><b>Cài đặt &amp; In nhãn</b><span>Chẩn đoán · QR 24 kệ</span></div>
+        <div><b>Cài đặt &amp; In nhãn</b><span>Chẩn đoán · QR 26 kệ</span></div>
       </button>
     </div>
 
-    <div class="panel">
+    <div class="panel" style="border:1px solid #E2E8F0">
       <div class="panel-head">
         <h2 class="panel-title">Thao tác gần đây</h2>
         <button type="button" class="btn btn-ghost btn-sm" data-go="log">Xem tất cả</button>
@@ -631,7 +778,130 @@ section{animation:fadeUp .22s var(--ease)}
     <div class="mode-tabs" id="flowModeTabs">
       <button type="button" data-mode="NHAP">Nhập kho</button>
       <button type="button" data-mode="XUAT">Xuất kho</button>
-      <button type="button" data-mode="KIEMKE">Kiểm kê</button>
+      <button type="button" data-mode="KIEMKE">Kiểm kê &amp; Đối chiếu</button>
+    </div>
+
+    <!-- ĐỐI CHIẾU FILE KIỂM KÊ & NHẬP - XUẤT - TỒN (GIỐNG TRANG KHO ĐẾ) -->
+    <div class="panel" id="kkReconPanel" hidden>
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Đối chiếu file kiểm kê &amp; Nhập - Xuất - Tồn (SLKH · Nhập · Xuất · Tồn mũ)</h2>
+          <div class="xs muted" style="margin-top:3px">Nhận diện tự động các cột: <b>MÃ MŨ, PO, SO, MODEL, MÀU, SIZE, SLKH, KỆ, TẦNG, Ô, NHẬP, XUẤT, TỒN</b>. Hỗ trợ chọn file Tổng hợp hoặc file Nhập / Xuất riêng lẻ (.xlsx, .xls, .xlsb, .csv).</div>
+        </div>
+        <div class="row wrap" style="gap:6px">
+          <button type="button" class="btn btn-ghost btn-sm" id="btnReconSample">Nạp dữ liệu file mẫu</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnReconTemplate">Tải file mẫu (.csv)</button>
+        </div>
+      </div>
+
+      <div class="recon-grid">
+        <div class="recon-fbox">
+          <label for="kkReconFrom">Từ ngày</label>
+          <input id="kkReconFrom" type="date">
+        </div>
+        <div class="recon-fbox">
+          <label for="kkReconTo">Đến ngày</label>
+          <input id="kkReconTo" type="date">
+        </div>
+        <div class="recon-fbox">
+          <label for="kkReconSheetSel">Sheet mục tiêu trong file</label>
+          <select id="kkReconSheetSel">
+            <option value="AUTO_MU_BTP">Tự động chỉ nhận sheet MŨ BTP</option>
+            <option value="ALL">Đọc tất cả các sheet</option>
+          </select>
+        </div>
+        <div class="recon-fbox">
+          <label for="kkReconKeyMode">Khoá đối chiếu dữ liệu</label>
+          <select id="kkReconKeyMode">
+            <option value="PO">Theo từng đơn PO (Khuyên dùng cho MŨ BTP)</option>
+            <option value="MA_GIAY">Gộp theo Mã giày / Mã mũ</option>
+          </select>
+        </div>
+        <div class="recon-fbox">
+          <label for="kkReconMixedFile">1. File Tổng hợp (.xlsb / .xlsx / .csv)</label>
+          <input id="kkReconMixedFile" type="file" accept=".xlsx,.xls,.xlsb,.xlsm,.csv" multiple>
+        </div>
+        <div class="recon-fbox">
+          <label for="kkReconDefaultLoc">Ô kệ mặc định cho tồn chưa ghi kệ</label>
+          <select id="kkReconDefaultLoc">
+            <option value="K01-T1-O1" selected>Gán vào K01-T1-O1 (Kho đệm / Chờ xếp kệ)</option>
+            <option value="K13-T1-O1">Gán vào K13-T1-O1 (Tạm trữ Dãy A)</option>
+            <option value="K14-T1-O1">Gán vào K14-T1-O1 (Tạm trữ Dãy B)</option>
+            <option value="K26-T3-O4">Gán vào K26-T3-O4 (Kệ cuối)</option>
+            <option value="NONE">Chỉ lưu mã có sẵn Kệ trong file</option>
+          </select>
+        </div>
+        <div class="recon-fbox">
+          <label for="kkReconInFile">2. File Nhập kho riêng (tuỳ chọn)</label>
+          <input id="kkReconInFile" type="file" accept=".xlsx,.xls,.xlsb,.xlsm,.csv" multiple>
+        </div>
+        <div class="recon-fbox">
+          <label for="kkReconOutFile">3. File Xuất kho riêng (tuỳ chọn)</label>
+          <input id="kkReconOutFile" type="file" accept=".xlsx,.xls,.xlsb,.xlsm,.csv" multiple>
+        </div>
+      </div>
+
+      <div class="small muted" id="kkReconFiles" style="margin-top:8px">Chưa chọn file đối chiếu (mặc định khi chọn file nhiều sheet sẽ tự động trỏ đúng vào sheet <b>MŨ BTP</b>, bỏ qua ĐẾ BTP, DA BTP, SLKH...).</div>
+      <div id="kkReconLoading" hidden style="margin-top:10px;padding:12px 16px;border-radius:12px;background:#f0fdfa;border:1px solid #99f6e4;color:#0f766e;font-weight:700">
+        <span class="spin" style="display:inline-block;width:16px;height:16px;border:2px solid #0d9488;border-top-color:transparent;border-radius:50%;margin-right:8px;vertical-align:middle"></span>
+        <span id="kkReconLoadingText">Đang đọc dữ liệu file...</span>
+      </div>
+      <div id="kkReconAnomalies" hidden style="margin-top:10px"></div>
+
+      <div class="row wrap" style="margin-top:10px">
+        <button type="button" class="btn btn-pri btn-sm" id="kkReconRun">Đối chiếu 4 cột với App</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="kkReconSaveAdjust" hidden>Đồng bộ / Cân tồn theo File</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="kkReconExport" disabled>Tải báo cáo Excel (.csv)</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="kkReconClear" hidden>Xoá bảng đối chiếu</button>
+        <span class="small" id="kkReconMsg" style="font-weight:600;color:var(--brand)"></span>
+      </div>
+
+      <div class="recon-filters" id="kkReconFilterTabs" hidden>
+        <button type="button" class="r-fbtn on" data-rf="all">Tất cả (<span id="cntFilterAll">0</span>)</button>
+        <button type="button" class="r-fbtn" data-rf="noShelf" style="color:var(--rose-700);border-color:#fda4af">Tồn chưa xếp kệ (<span id="cntFilterNoShelf">0</span>)</button>
+        <button type="button" class="r-fbtn" data-rf="planOnly" style="color:var(--sky-700);border-color:#7dd3fc">Chưa tồn (Chỉ có SLKH) (<span id="cntFilterPlanOnly">0</span>)</button>
+        <button type="button" class="r-fbtn" data-rf="locDiff" style="color:var(--indigo-700);border-color:#c7d2fe">Lệch Kệ / Tầng / Ô (<span id="cntFilterLocDiff">0</span>)</button>
+        <button type="button" class="r-fbtn" data-rf="diff" style="color:var(--amber-700);border-color:#fde68a">Lệch số lượng (<span id="cntFilterDiff">0</span>)</button>
+        <button type="button" class="r-fbtn" data-rf="ok" style="color:var(--emerald-700);border-color:#a7f3d0">Khớp hoàn toàn (<span id="cntFilterOk">0</span>)</button>
+      </div>
+
+      <div id="kkReconSummary" style="margin-top:10px"></div>
+
+      <div class="tbl-wrap" id="kkReconTableWrap" hidden style="margin-top:8px">
+        <table class="recon-tbl">
+          <thead>
+            <tr>
+              <th rowspan="2">MÃ MŨ</th>
+              <th rowspan="2">PO</th>
+              <th rowspan="2">SO</th>
+              <th rowspan="2">MODEL · MÀU · SIZE</th>
+              <th rowspan="2" style="text-align:right;background:rgba(2,132,199,.07);color:#0369a1">SLKH</th>
+              <th colspan="3" style="text-align:center;background:rgba(79,70,229,.07);color:#4338ca">Đối chiếu Vị trí (File · App)</th>
+              <th colspan="3" style="text-align:center;background:rgba(5,150,105,.08);color:#047857">Nhập kho</th>
+              <th colspan="3" style="text-align:center;background:rgba(225,29,72,.07);color:#be123c">Xuất kho</th>
+              <th colspan="3" style="text-align:center;background:rgba(217,119,6,.08);color:#b45309">Tồn mũ (Tồn kho)</th>
+              <th rowspan="2">Đánh giá / Trạng thái</th>
+              <th rowspan="2" style="text-align:center">Thao tác</th>
+            </tr>
+            <tr>
+              <th style="background:rgba(79,70,229,.04)">KỆ (File · App)</th>
+              <th style="background:rgba(79,70,229,.04)">TẦNG</th>
+              <th style="background:rgba(79,70,229,.04)">Ô</th>
+              <th style="text-align:right;background:rgba(5,150,105,.04)">File</th>
+              <th style="text-align:right;background:rgba(5,150,105,.04)">App</th>
+              <th style="text-align:center;background:rgba(5,150,105,.04)">Lệch</th>
+              <th style="text-align:right;background:rgba(225,29,72,.04)">File</th>
+              <th style="text-align:right;background:rgba(225,29,72,.04)">App</th>
+              <th style="text-align:center;background:rgba(225,29,72,.04)">Lệch</th>
+              <th style="text-align:right;background:rgba(217,119,6,.04)">Tồn File</th>
+              <th style="text-align:right;background:rgba(217,119,6,.04)">Tồn App</th>
+              <th style="text-align:center;background:rgba(217,119,6,.04)">Lệch tồn</th>
+            </tr>
+          </thead>
+          <tbody id="kkReconBody"></tbody>
+        </table>
+      </div>
+      <div id="kkPlanOnlyWrap"></div>
     </div>
 
     <div class="flow-steps" id="steps">
@@ -656,13 +926,17 @@ section{animation:fadeUp .22s var(--ease)}
         <div class="cam-viewport" id="camViewport">
           <div id="camBox"></div>
           <div class="cam-overlay" id="camOverlay" hidden><div class="cam-reticle"></div></div>
-          <div class="cam-off-msg" id="camOff" hidden>Camera đang tắt — dùng súng bắn mã hoặc nhập mã bên dưới</div>
+          <div class="cam-off-msg" id="camOff" hidden>Nhấn nút "📷 Mở Camera quét mã QR (GitHub Pages)" bên dưới, hoặc dùng súng bắn mã / nhập trực tiếp</div>
         </div>
         <div class="cam-toolbar">
-          <button type="button" class="cam-tbtn" id="btnCam"></button>
+          <button type="button" class="cam-tbtn on" id="btnCamBridge" title="Mở Camera trên GitHub Pages để quét mã QR / Barcode" style="background:linear-gradient(135deg,#0d9488,#0284c7);padding:10px 16px;font-size:14px;box-shadow:0 4px 14px rgba(13,148,136,.35);width:100%">
+            <span class="ico" id="btnCamBridgeIco"></span>
+            <span>📷 Mở Camera quét mã QR (GitHub Pages)</span>
+          </button>
+          <button type="button" class="cam-tbtn" id="btnCam" hidden></button>
           <button type="button" class="cam-tbtn" id="btnCamFlip" hidden></button>
           <button type="button" class="cam-tbtn" id="btnTorch" hidden></button>
-          <button type="button" class="cam-tbtn" id="btnScanPhoto"></button>
+          <button type="button" class="cam-tbtn" id="btnScanPhoto" hidden></button>
           <input type="file" id="camFileInput" accept="image/*" capture="environment" hidden>
         </div>
       </div>
@@ -687,9 +961,9 @@ section{animation:fadeUp .22s var(--ease)}
     <div class="panel" style="padding:14px 16px">
       <div class="map-bar">
         <div class="filter-pills" id="mapFilters">
-          <button type="button" class="pill on" data-mf="all">Tất cả (24)</button>
-          <button type="button" class="pill" data-mf="A">Dãy A (K01–K12)</button>
-          <button type="button" class="pill" data-mf="B">Dãy B (K13–K24)</button>
+          <button type="button" class="pill on" data-mf="all">Tất cả (26)</button>
+          <button type="button" class="pill" data-mf="A">Dãy A (K01–K13)</button>
+          <button type="button" class="pill" data-mf="B">Dãy B (K14–K26)</button>
           <button type="button" class="pill" data-mf="used">Có hàng</button>
           <button type="button" class="pill" data-mf="empty">Trống</button>
         </div>
@@ -776,20 +1050,27 @@ section{animation:fadeUp .22s var(--ease)}
     </div>
 
     <div class="panel">
-      <div class="panel-head"><h2 class="panel-title">Kết nối Google Sheet &amp; Apps Script</h2></div>
-      <label class="f-lbl" for="setApi">Link Web App Apps Script (kết thúc bằng /exec)</label>
+      <div class="panel-head"><h2 class="panel-title">Kết nối Google Sheet, Apps Script &amp; Camera GitHub</h2></div>
+      <label class="f-lbl" for="setApi">1. Link Web App Apps Script (kết thúc bằng /exec)</label>
       <input class="inp mono" id="setApi" placeholder="https://script.google.com/macros/s/…/exec">
+      <label class="f-lbl" for="setGhUrl">2. Link GitHub Pages dẫn mở Camera HTTPS (tránh lỗi chặn iframe trên Apps Script)</label>
+      <input class="inp mono" id="setGhUrl" placeholder="https://quockiet-da22ttd-110122100.github.io/KhoMu_LEFASO/">
       <div class="row wrap" style="margin-top:10px">
-        <button type="button" class="btn btn-pri" id="btnSaveApi" style="flex:1">Lưu &amp; kết nối</button>
-        <button type="button" class="btn btn-ghost" id="btnTestApi" style="flex:1">Kiểm tra kết nối</button>
+        <button type="button" class="btn btn-pri" id="btnSaveApi" style="flex:1">Lưu cấu hình</button>
+        <button type="button" class="btn btn-ghost" id="btnTestApi" style="flex:1">Kiểm tra kết nối Sheet</button>
+        <button type="button" class="btn btn-ghost" id="btnOpenGhCam" style="flex:1">Mở trang Camera GitHub</button>
       </div>
       <div class="small muted" id="apiMsg" style="margin-top:8px"></div>
     </div>
 
     <div class="panel" id="sampleCard">
-      <div class="panel-head"><h2 class="panel-title">Dữ liệu mẫu thử nghiệm</h2></div>
-      <div class="small muted">Dùng để test nhanh sơ đồ 24 kệ và chức năng xuất/tìm trước khi chạy thật.</div>
+      <div class="panel-head"><h2 class="panel-title">Làm sạch, Chuẩn hóa &amp; Dữ liệu mẫu Sheet</h2></div>
+      <div class="small muted">Làm sạch sẽ tự gộp các dòng trùng vị trí (Kệ + Tầng + Ô + Mã mũ), xoá dòng tồn &le; 0, tự thêm mã mũ thiếu vào danh mục và lưu trữ bớt nhật ký cũ (&gt; 5.000 dòng).</div>
       <div class="row wrap" style="margin-top:10px">
+        <button type="button" class="btn btn-pri" id="btnCleanData" style="flex:1">Làm sạch &amp; Chuẩn hóa dữ liệu</button>
+        <button type="button" class="btn btn-ghost" id="btnArchiveLogs" style="flex:1">Lưu trữ bớt Nhật ký cũ</button>
+      </div>
+      <div class="row wrap" style="margin-top:8px">
         <button type="button" class="btn btn-ghost" id="btnSeedSample" style="flex:1">Nạp dữ liệu mẫu</button>
         <button type="button" class="btn btn-ghost" id="btnClearSample" style="flex:1;color:var(--c-err)">Xoá dữ liệu tồn &amp; log</button>
       </div>
@@ -808,7 +1089,7 @@ section{animation:fadeUp .22s var(--ease)}
     </div>
 
     <div class="panel">
-      <div class="panel-head"><h2 class="panel-title">In nhãn QR vị trí (24 kệ × 12 ô)</h2></div>
+      <div class="panel-head"><h2 class="panel-title">In nhãn QR vị trí (26 kệ × 12 ô)</h2></div>
       <div class="small muted">Mỗi kệ in 1 trang A4 gồm 1 nhãn đầu kệ lớn và 12 nhãn ô (KE:K01-T1-O1 … KE:K01-T3-O4).</div>
       <div class="row" style="margin-top:10px">
         <input class="inp" id="lblFrom" type="number" min="1" max="24" value="1" aria-label="Từ kệ">
@@ -837,7 +1118,25 @@ section{animation:fadeUp .22s var(--ease)}
       </div>
     </div>
   </section>
+    
+  <!-- MODAL TIẾN TRÌNH ĐỒNG BỘ GOOGLE SHEET -->
+  <div id="reconProgressModal" hidden class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong id="rpmTitle">Đang đồng bộ dữ liệu lên Google Sheet</strong>
+      </div>
+      <div class="modal-body">
+        <div id="rpmStep" style="font-weight:700;color:var(--brand);margin-bottom:6px">Đợt 1/9</div>
+        <div class="bar-track" style="height:12px;margin-bottom:8px">
+          <div class="bar-fill" id="rpmBar" style="width:0%;background:linear-gradient(90deg,#0d9488,#0284c7)"></div>
+        </div>
+        <div id="rpmText" class="small muted">Đang gửi dữ liệu lên Google Sheet...</div>
+      </div>
+    </div>
+  </div>
 </main>
+  </div>
+</div>
 
 <nav class="bottom-nav" id="bottomNav" hidden aria-label="Điều hướng chính"></nav>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -847,7 +1146,7 @@ section{animation:fadeUp .22s var(--ease)}
 /* =====================================================================
    KHO MŨ TBS — Frontend GitHub Pages + Camera + Optimistic Queue
    ===================================================================== */
-const SO_KE = 24, SO_TANG = 3, SO_O = 4;
+const SO_KE = 26, SO_TANG = 3, SO_O = 4;
 const LS = {
   api:'km.api', sess:'km.sess', data:'km.data', queue:'km.queue', err:'km.err',
   recent:'km.recent', lastQty:'km.lastQty', sound:'km.sound', cam:'km.cam'
@@ -905,6 +1204,8 @@ const icon = name => '<span class="ico"><svg viewBox="0 0 24 24" aria-hidden="tr
 
 function mountStaticIcons(){
   $('#brandLogo').innerHTML = icon('logo');
+  if ($('#sideLogo')) $('#sideLogo').innerHTML = icon('logo');
+  if ($('#sideToggleIco')) $('#sideToggleIco').innerHTML = icon('arrow-left');
   $('#loginLogo').innerHTML = icon('logo');
   $('#btnBack').innerHTML = icon('arrow-left');
   $('#demoNoteIco').innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICONS.alert + '</svg>';
@@ -912,9 +1213,41 @@ function mountStaticIcons(){
   $('#btnFindScan').innerHTML = icon('camera');
   $('#btnPickMap').innerHTML = icon('map') + '<span>Chọn trên sơ đồ</span>';
   $('#btnScanPhoto').innerHTML = icon('image') + '<span>Chụp ảnh mã</span>';
+  if ($('#btnCamBridge')) $('#btnCamBridge').innerHTML = icon('camera') + '<span>Mở Camera GitHub</span>';
   $('#btnCamFlip').innerHTML = icon('flip') + '<span>Đổi cam</span>';
   $('#btnTorch').innerHTML = icon('zap') + '<span>Đèn flash</span>';
   $$('[data-ico]').forEach(el => { el.innerHTML = icon(el.dataset.ico); });
+
+  const SIDE_GROUPS = [
+    { grp:'Tổng quan & Sơ đồ', items:[
+      { id:'home', lbl:'Trang chủ', ico:'home' },
+      { id:'map',  lbl:'Sơ đồ 26 kệ', ico:'map' },
+      { id:'find', lbl:'Tra cứu & Danh mục', ico:'search' }
+    ]},
+    { grp:'Nghiệp vụ kho', items:[
+      { id:'NHAP',   lbl:'Nhập kho', ico:'inbox-in' },
+      { id:'XUAT',   lbl:'Xuất kho', ico:'package-out' },
+      { id:'KIEMKE', lbl:'Kiểm kê & Đối chiếu', ico:'clipboard-check', badge:'File N-X-T' }
+    ]},
+    { grp:'Hệ thống', items:[
+      { id:'log',      lbl:'Nhật ký thao tác', ico:'history' },
+      { id:'settings', lbl:'Cài đặt & Kết nối', ico:'settings' }
+    ]}
+  ];
+  if ($('#sideMenu')) {
+    $('#sideMenu').innerHTML = SIDE_GROUPS.map(g =>
+      '<div class="side-grp">' + g.grp + '</div>' +
+      g.items.map(n => '<button type="button" class="side-btn" data-nav="' + n.id + '" title="' + n.lbl + '">' +
+        icon(n.ico) + '<span>' + n.lbl + '</span>' +
+        (n.badge ? '<em class="side-badge" style="font-style:normal">' + n.badge + '</em>' : '') +
+      '</button>').join('')
+    ).join('');
+  }
+  if ($('#btnToggleSide')) {
+    $('#btnToggleSide').onclick = () => {
+      $('#sideNav').classList.toggle('collapsed');
+    };
+  }
 
   const NAV_ITEMS = [
     { id:'home', lbl:'Trang chủ', ico:'home' },
@@ -931,8 +1264,21 @@ function mountStaticIcons(){
 }
 
 const DEFAULT_API = 'https://script.google.com/macros/s/AKfycbxxPGIEsz5raJMYCQzdIrhNDO1Ecqz13vKPxc5yd0c0LSjlB1EpKG8KhGCpw0OEB91Pgg/exec';
+const DEFAULT_GH_URL = 'https://quockiet-da22ttd-110122100.github.io/KhoMu_LEFASO/';
 const savedApi = localStorage.getItem(LS.api);
 let API = savedApi !== null ? savedApi : DEFAULT_API;
+let storedGh = localStorage.getItem('km.gh');
+if (storedGh) {
+  if (storedGh.includes('/KhoMu/') && !storedGh.includes('/KhoMu_LEFASO/')) {
+    storedGh = storedGh.replace('/KhoMu/', '/KhoMu_LEFASO/');
+    localStorage.setItem('km.gh', storedGh);
+  }
+  if (storedGh.includes('quockiot-da22ttd-110122100')) {
+    storedGh = storedGh.replace('quockiot-da22ttd-110122100', 'quockiet-da22ttd-110122100');
+    localStorage.setItem('km.gh', storedGh);
+  }
+}
+let GH_URL = storedGh || DEFAULT_GH_URL;
 let SESS = load(LS.sess, null);
 let K = load(LS.data, { shelves:[], items:[], stock:[], logs:[] });
 let Q = load(LS.queue, []);
@@ -992,13 +1338,33 @@ function toast(msg, kind){
 
 /* ---------------------- Giao tiếp Server & Hàng đợi Offline ---------------------- */
 async function post(action, payload){
-  const res = await fetch(API, { method:'POST', body: JSON.stringify(Object.assign({ action, token: SESS && SESS.token }, payload || {})) });
-  const txt = await res.text();
-  let j;
-  try { j = JSON.parse(txt); }
-  catch (e) { throw new Error('Apps Script cần cấp quyền lần đầu: mở Apps Script → chọn hàm setup → bấm Chạy → Cho phép'); }
-  if (!j.ok) throw new Error(j.error || 'Lỗi máy chủ');
-  return j.data;
+  const bodyObj = Object.assign({
+    action,
+    token: SESS && SESS.token,
+    transactionId: (payload && payload.transactionId) || (Date.now() + '-' + Math.random().toString(36).slice(2, 8))
+  }, payload || {});
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      // Dùng text/plain để trình duyệt bỏ qua OPTIONS preflight -> chạy nhanh và không lỗi CORS trên GitHub Pages / Apps Script
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(bodyObj),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    const txt = await res.text();
+    let j;
+    try { j = JSON.parse(txt); }
+    catch (e) { throw new Error('Apps Script cần cấp quyền lần đầu: mở Apps Script → chọn hàm setup → bấm Chạy → Cho phép'); }
+    if (!j.ok && j.status !== 'success') throw new Error(j.error || j.message || 'Lỗi máy chủ');
+    return j.data;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err && err.name === 'AbortError') throw new Error('Mạng kho phản hồi quá 12 giây — dữ liệu đã lưu an toàn vào Hàng đợi offline');
+    throw err;
+  }
 }
 function sessionExpired(){
   toast('Phiên đăng nhập hết hạn — đăng nhập lại (dữ liệu chờ vẫn giữ)', 'err');
@@ -1031,7 +1397,8 @@ async function flush(){
   syncing = true; renderSync();
   const batch = Q.slice(0, 40);
   try {
-    const r = API ? await post('sync', { ops: batch }) : localSync(batch);
+    // Batch Sync (Gửi gộp): gom cả mảng queue gửi trong 1 request duy nhất
+    const r = API ? await post('BATCH_SYNC', { ops: batch, user: SESS.user.ma }) : localSync(batch);
     const done = {};
     r.results.forEach(x => {
       done[x.id] = true;
@@ -1059,19 +1426,22 @@ async function pull(){
   renderSync();
 }
 function enqueue(op){
-  op.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  op.luc = Date.now(); op.nguoi = SESS.user.ma;
-  Q.push(op); save(LS.queue, Q); renderSync(); flush();
+  op.id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+  op.transactionId = op.id;
+  op.luc = Date.now(); op.nguoi = SESS ? SESS.user.ma : 'kho';
+  Q.push(op); save(LS.queue, Q); renderSync(); refreshView(); flush();
 }
 function renderSync(){
   const el = $('#sync'); if (!el) return;
   el.hidden = !SESS;
-  if (!API) { el.className = 'sync-pill demo'; $('#syncTxt').textContent = 'Chế độ thử'; }
+  if (!API) { el.className = 'sync-pill demo'; $('#syncTxt').textContent = 'Đã đồng bộ (Cục bộ)'; }
   else if (!online) { el.className = 'sync-pill off'; $('#syncTxt').textContent = 'Mất mạng · ' + Q.length + ' chờ'; }
   else if (Q.length || syncing) { el.className = 'sync-pill wait'; $('#syncTxt').textContent = 'Đang gửi ' + Q.length; }
   else { el.className = 'sync-pill'; $('#syncTxt').textContent = 'Đã đồng bộ'; }
   const p = $('#stPend'); if (p) p.textContent = Q.length;
-  const sn = $('#stSyncNote'); if (sn) sn.textContent = !API ? 'Đang chạy cục bộ' : Q.length ? 'Đang đẩy lên Sheet' : 'Khớp Google Sheet';
+  const pCard = $('#kpiPendCard'); if (pCard) pCard.classList.toggle('pending', Q.length > 0);
+  const sn = $('#stSyncNote');
+  if (sn) sn.textContent = Q.length > 0 ? ('Có ' + Q.length + ' thao tác chờ đẩy lên Sheet') : '0 — Khớp Google Sheet';
 }
 
 /* =====================================================================
@@ -1142,15 +1512,21 @@ async function toggleTorch(){
   } catch (e) { toast('Thiết bị không hỗ trợ bật đèn flash', 'err'); }
 }
 
+const isGithubCamHost = () => location.hostname.endsWith('github.io') || location.search.includes('bridge=1');
+
 function updateCamUi(active){
   const vp = $('#camViewport');
+  const ghMode = isGithubCamHost();
   if (vp) vp.classList.toggle('off', !active);
   if ($('#camOverlay')) $('#camOverlay').hidden = !active;
   if ($('#camOff')) $('#camOff').hidden = active;
   if ($('#btnCam')) {
+    $('#btnCam').hidden = !ghMode;
     $('#btnCam').innerHTML = (active ? icon('camera-off') : icon('camera')) + '<span>' + (active ? 'Tắt cam' : 'Bật cam') + '</span>';
     $('#btnCam').classList.toggle('on', active);
   }
+  if ($('#btnScanPhoto')) $('#btnScanPhoto').hidden = true;
+  if ($('#btnCamBridge')) $('#btnCamBridge').hidden = ghMode && active;
   if ($('#btnCamFlip')) $('#btnCamFlip').hidden = !active;
   if (!active && $('#btnTorch')) $('#btnTorch').hidden = true;
 }
@@ -1167,7 +1543,121 @@ function onScan(txt){
   const now = Date.now();
   if (txt === lastScan.c && now - lastScan.t < 1800) return;
   lastScan = { c: txt, t: now };
+  if (window.opener && location.search.includes('bridge=1')) {
+    try { window.opener.postMessage({ type:'KM_SCAN', code: txt }, '*'); } catch (e) {}
+  }
   if (camHandler) camHandler(txt);
+}
+
+/* Nhận mã quét từ cửa sổ Cầu nối Camera GitHub Pages (khi chạy trên Apps Script) */
+window.addEventListener('message', e => {
+  if (e && e.data && e.data.type === 'KM_SCAN' && e.data.code) {
+    onScan(String(e.data.code));
+  }
+});
+
+let camPopupWin = null;
+function openGithubCameraBridge(){
+  // Nếu người dùng đã tự cấu hình link GitHub Pages riêng (khác link mặc định chưa bật Pages) và chọn chế độ mở URL ngoài
+  const customGh = (localStorage.getItem('km.gh_custom') || '').trim();
+  if (customGh) {
+    const sep = customGh.includes('?') ? '&' : '?';
+    const bridgeUrl = customGh + sep + 'bridge=1' + (API ? '&api=' + encodeURIComponent(API) : '');
+    const wExt = window.open(bridgeUrl, 'km_gh_cam', 'width=480,height=760,menubar=no,toolbar=no,location=no');
+    if (!wExt) toast('Trình duyệt chặn popup — hãy cho phép mở cửa sổ Camera', 'err');
+    return;
+  }
+
+  // Mở cửa sổ Camera độc lập (Top-Level Window thoát khỏi iframe của Apps Script, không bao giờ lỗi 404)
+  const w = window.open('', 'km_gh_cam', 'width=480,height=760,menubar=no,toolbar=no,location=no,resizable=yes,scrollbars=yes');
+  if (!w) {
+    toast('Trình duyệt đang chặn cửa sổ bật lên (Popup) — hãy bấm Cho phép Popup trên thanh địa chỉ', 'err');
+    return;
+  }
+  camPopupWin = w;
+  const stepHint = ($('#prompt') && $('#prompt').textContent) || 'Quét mã QR Ô kệ (VD: KE:K01-T1-O2) hoặc Mã mũ';
+  const popupHtml = '<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
+    '<title>Camera Quét Mã — Kho Mũ TBS</title>' +
+    '<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"><' + '/script>' +
+    '<style>' +
+    '*{box-sizing:border-box}body{margin:0;padding:16px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0f172a;color:#f8fafc}' +
+    '.card{background:#1e293b;border:1px solid #334155;border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 10px 25px rgba(0,0,0,.3)}' +
+    '.head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}' +
+    '.title{font-size:16px;font-weight:800;color:#fff}.badge{padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700;background:#065f46;color:#6ee7b7;border:1px solid #059669}' +
+    '.hint{font-size:13px;color:#cbd5e1;background:#0f172a;padding:10px 12px;border-radius:10px;margin-bottom:12px;border-left:3px solid #14b8a6}' +
+    '#readerWrap{position:relative;min-height:240px;background:#090d16;border-radius:14px;overflow:hidden;border:2px solid #0d9488;display:flex;align-items:center;justify-content:center}' +
+    '#reader{width:100%}#reader video{width:100%!important;display:block;object-fit:cover}' +
+    '#camMsg{padding:20px;text-align:center;color:#94a3b8;font-size:13.5px;line-height:1.5}' +
+    '.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}' +
+    'button,.fbtn{min-height:44px;padding:8px 12px;border-radius:11px;border:1px solid #475569;background:#334155;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-align:center}' +
+    'button:hover,.fbtn:hover{background:#475569}.pri{background:linear-gradient(135deg,#0d9488,#0284c7);border-color:transparent}' +
+    '.row{display:flex;gap:8px;margin-top:10px}input[type=text]{flex:1;min-height:44px;border-radius:11px;border:1.5px solid #475569;background:#0f172a;color:#fff;padding:0 12px;font-size:15px;font-family:monospace}' +
+    '.log{font-size:13px;color:#a7f3d0;margin-top:8px;padding:10px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);border-radius:10px;display:none}' +
+    '</style></head><body>' +
+    '<div class="card">' +
+      '<div class="head"><div class="title">Camera Quét Mã — Kho Mũ TBS</div><span class="badge" id="stBadge">Đang mở cam…</span></div>' +
+      '<div class="hint" id="stepTxt">' + esc(stepHint) + '</div>' +
+      '<div id="readerWrap"><div id="reader"></div><div id="camMsg" style="display:none"></div></div>' +
+      '<div class="btns">' +
+        '<button type="button" class="pri" id="bToggle">Bật / Đổi Camera</button>' +
+        '<label class="fbtn" for="fImg">Chụp / Chọn Ảnh Mã<input id="fImg" type="file" accept="image/*" capture="environment" style="display:none"></label>' +
+      '</div>' +
+      '<div class="row">' +
+        '<input id="mInp" type="text" placeholder="Hoặc bắn / gõ mã tại đây rồi Enter" autocomplete="off">' +
+        '<button type="button" class="pri" id="bSend" style="min-width:74px">Gửi</button>' +
+      '</div>' +
+      '<div class="log" id="scanLog"></div>' +
+    '</div>' +
+    '<script>' +
+    'let qr = null, facing = "environment", running = false, lastCode = "", lastTime = 0;' +
+    'function sendCode(code){' +
+      'code = String(code || "").trim(); if (!code) return;' +
+      'const now = Date.now(); if (code === lastCode && now - lastTime < 1500) return;' +
+      'lastCode = code; lastTime = now;' +
+      'try { if (window.opener) window.opener.postMessage({ type:"KM_SCAN", code: code }, "*"); } catch(e){}' +
+      'const lg = document.getElementById("scanLog"); lg.style.display = "block";' +
+      'lg.textContent = "Đã truyền mã sang Kho Mũ: " + code;' +
+    '}' +
+    'async function startCam(){' +
+      'const msg = document.getElementById("camMsg"), st = document.getElementById("stBadge");' +
+      'msg.style.display = "none"; st.textContent = "Đang kết nối camera…";' +
+      'if (typeof Html5Qrcode === "undefined") { setTimeout(startCam, 300); return; }' +
+      'try { if (qr && running) { await qr.stop(); running = false; } } catch(e){}' +
+      'qr = new Html5Qrcode("reader", { verbose:false });' +
+      'const modes = [facing, facing === "environment" ? "user" : "environment"];' +
+      'let ok = false, errLast = null;' +
+      'for (let i = 0; i < modes.length; i++){' +
+        'try {' +
+          'await qr.start({ facingMode: modes[i] }, { fps: 12, qrbox: { width: 250, height: 160 } }, txt => sendCode(txt), () => {});' +
+          'facing = modes[i]; running = true; ok = true; break;' +
+        '} catch(err){ errLast = err; try { await qr.stop(); } catch(e){} }' +
+      '}' +
+      'if (ok) { st.textContent = "Đang quét trực tiếp"; }' +
+      'else {' +
+        'st.textContent = "Chế độ chụp ảnh / nhập mã";' +
+        'msg.style.display = "block";' +
+        'msg.innerHTML = "Không mở được video trực tiếp trên thiết bị này (" + (errLast && errLast.name ? errLast.name : "NoCam") + ").<br>Hãy bấm <b>Chụp / Chọn Ảnh Mã</b> hoặc gõ/bắn mã bên dưới.";' +
+      '}' +
+    '}' +
+    'document.getElementById("bToggle").onclick = () => { facing = facing === "environment" ? "user" : "environment"; startCam(); };' +
+    'document.getElementById("fImg").onchange = async (e) => {' +
+      'const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return;' +
+      'try { if (qr && running) { await qr.stop(); running = false; } } catch(x){}' +
+      'const r = new Html5Qrcode("reader", { verbose:false });' +
+      'try { const txt = await r.scanFile(f, false); sendCode(txt); }' +
+      'catch(err){ alert("Không đọc được mã trong ảnh — hãy chụp rõ và sát mã QR/Barcode hơn."); }' +
+      'finally { try { r.clear(); } catch(x){} startCam(); }' +
+    '};' +
+    'document.getElementById("bSend").onclick = () => { const inp = document.getElementById("mInp"); if (inp.value.trim()) { sendCode(inp.value.trim()); inp.value = ""; inp.focus(); } };' +
+    'document.getElementById("mInp").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("bSend").click(); } });' +
+    'window.addEventListener("load", () => setTimeout(startCam, 150));' +
+    '<' + '/script><' + '/body><' + '/html>';
+
+  w.document.open();
+  w.document.write(popupHtml);
+  w.document.close();
+  toast('Đã mở cửa sổ Camera quét mã trực tiếp', 'ok');
 }
 
 /* Súng quét mã USB / Bluetooth */
@@ -1201,21 +1691,24 @@ const parseItem = t => String(t).trim().toUpperCase().replace(/^(VT|MU|LO):\s*/,
    ĐIỀU HƯỚNG
    ===================================================================== */
 const TITLES = {
-  home:'Kho Mũ TBS', NHAP:'Nhập kho', XUAT:'Xuất kho', KIEMKE:'Kiểm kê ô',
-  find:'Tra cứu & Danh mục', map:'Sơ đồ 24 kệ', log:'Nhật ký thao tác', settings:'Cài đặt & Kết nối'
+  home:'Kho Mũ TBS — Tổng quan', NHAP:'Nhập kho', XUAT:'Xuất kho', KIEMKE:'Kiểm kê & Đối chiếu File N-X-T',
+  find:'Tra cứu & Danh mục', map:'Sơ đồ 26 kệ', log:'Nhật ký thao tác', settings:'Cài đặt & Kết nối'
 };
 function go(v, arg){
   camStop(); camHandler = null;
   view = v;
   ['vLogin','vHome','vFlow','vFind','vMap','vLog','vSettings'].forEach(id => $('#' + id).hidden = true);
   const loggedIn = !!SESS && v !== 'login';
+  if ($('#sideNav')) $('#sideNav').hidden = !loggedIn;
+  if ($('#sideUser') && SESS) $('#sideUser').textContent = SESS.user.ten + ' · ' + SESS.user.vaiTro;
   $('#topNav').hidden = !loggedIn;
   $('#bottomNav').hidden = !loggedIn;
   $('#btnBack').hidden = v === 'home' || v === 'login';
   $('#title').textContent = TITLES[v] || 'Kho Mũ TBS';
 
   const navKey = (v === 'NHAP' || v === 'XUAT' || v === 'KIEMKE') ? 'NHAP' : v;
-  $$('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === navKey));
+  $$('#bottomNav [data-nav], #topNav [data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === navKey));
+  $$('#sideNav [data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === v));
 
   if (v === 'login') { $('#vLogin').hidden = false; $('#demoNote').hidden = !!API; $('#lgMa').focus(); }
   else if (v === 'home') { $('#vHome').hidden = false; renderHome(); }
@@ -1258,7 +1751,7 @@ function renderHome(){
   rows.forEach(r => itemCodes.add(r.maVT));
 
   $('#stQty').textContent = fmt(totalQty);
-  $('#stCells').textContent = cells + ' / ' + totalCells;
+  $('#stCells').innerHTML = '<span style="color:#1D4ED8">' + cells + '</span> <span style="color:#94A3B8;font-size:19px;font-weight:700">/ ' + totalCells + '</span>';
   $('#stFillBar').style.width = pct + '%';
   $('#stItems').textContent = fmt(itemCodes.size);
 
@@ -1286,6 +1779,7 @@ function flowStart(mode, presetLoc){
   const s = $('#vFlow').style;
   s.setProperty('--accent', acc[0]); s.setProperty('--accent-bg', acc[1]); s.setProperty('--accent-grad', acc[2]);
   $$('#flowModeTabs button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  if ($('#kkReconPanel')) $('#kkReconPanel').hidden = mode !== 'KIEMKE';
   refreshDatalist();
   if (F.loc && F.ma && (mode === 'NHAP' || mode === 'XUAT')) flowStep('qty');
   else if (F.loc) flowStep(mode === 'KIEMKE' ? 'count' : 'item');
@@ -1318,7 +1812,7 @@ function flowStep(step){
   }
 
   ['pickArea','itemArea','qtyArea','countArea'].forEach(id => $('#' + id).hidden = true);
-  const showCam = step === 'loc' || (step === 'item' && F.mode === 'NHAP') || step === 'count';
+  const showCam = step === 'loc' || step === 'item' || step === 'count';
   $('#camArea').hidden = !showCam;
   $('#btnPickMap').hidden = step !== 'loc';
   $('#manual').value = '';
@@ -1330,7 +1824,7 @@ function flowStep(step){
     $('#prompt').textContent = 'Chạm chọn kệ, rồi chọn ô thao tác';
     $('#pickArea').hidden = false; renderPicker();
   } else if (step === 'item') {
-    $('#prompt').textContent = F.mode === 'NHAP' ? 'Bước 2: Quét mã mũ / tem thùng' : 'Bước 2: Chọn mã mũ cần xuất';
+    $('#prompt').textContent = F.mode === 'NHAP' ? 'Bước 2: Quét mã mũ / tem thùng' : 'Bước 2: Quét hoặc chọn mã mũ cần xuất';
     $('#manual').placeholder = 'Nhập hoặc bắn mã mũ rồi Enter';
     $('#itemArea').hidden = false; renderItemStep();
   } else if (step === 'qty') {
@@ -1342,7 +1836,7 @@ function flowStep(step){
     $('#countArea').hidden = false; renderCount();
   }
 
-  if (showCam && autoCam && camOn()) camStart('camBox', flowScan);
+  if (showCam && isGithubCamHost() && autoCam && camOn()) camStart('camBox', flowScan);
   else { camStop(); camHandler = (step === 'qty' || step === 'pick') ? null : flowScan; }
 }
 
@@ -1535,6 +2029,1101 @@ function countAdd(ma){
 }
 
 /* =====================================================================
+   ĐỐI CHIẾU FILE KIỂM KÊ & NHẬP - XUẤT - TỒN (SLKH · NHẬP · XUẤT · TỒN MŨ)
+   ===================================================================== */
+let kkReconMixed = [], kkReconIn = [], kkReconOut = [], kkReconResult = null, kkReconFilter = 'all';
+let kkRawUploads = { mixed:[], in:[], out:[] };
+let kkReconAudit = null;
+
+function reconHeaderKey(v){ return foldVi(v).replace(/[^a-z0-9]/g, ''); }
+function isMuBtpSheetName(name){
+  const k = reconHeaderKey(name);
+  return k === 'mubtp' || k.includes('mubtp') || k === 'khomu' || k.includes('khomubtp');
+}
+function reconNum(v){
+  const s = String(v == null ? '' : v).trim().replace(/\s/g, '');
+  if (!s) return NaN;
+  let clean = s;
+  if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(clean)) clean = clean.replace(/,/g, '');
+  else if (clean.includes(',') && clean.includes('.')) clean = clean.lastIndexOf(',') > clean.lastIndexOf('.') ? clean.replace(/\./g, '').replace(',', '.') : clean.replace(/,/g, '');
+  else if (clean.includes(',')) clean = /,\d{1,2}$/.test(clean) ? clean.replace(',', '.') : clean.replace(/,/g, '');
+  return Number(clean);
+}
+function normRackCode(raw){
+  const s = String(raw || '').trim().toUpperCase().replace(/^(?:KE|KỆ|RACK|SHELF|VI\s*TRI|VỊ\s*TRÍ)[:\s\-_]*/i, '');
+  if (!s || /^(?:—|-|0|TRỐNG|TRONG|CHƯA CÓ KỆ|CHUA CO KE|NONE|NULL)$/i.test(s)) return { ke:'', tang:0, o:0, outOfRange:false, rawKe:'' };
+  const p = parseLoc(s);
+  if (p && !p.bad) return { ke: p.ke, tang: p.tang || 0, o: p.o || 0, outOfRange:false, rawKe:s };
+  const m = s.match(/^K\s*0*(\d{1,2})\b/) || s.match(/^0*(\d{1,2})\b/);
+  if (m) {
+    const n = +m[1];
+    if (n >= 1 && n <= SO_KE) return { ke: keCode(n), tang:0, o:0, outOfRange:false, rawKe:s };
+    return { ke: 'K' + String(n).padStart(2, '0'), tang:0, o:0, outOfRange:true, rawKe:s };
+  }
+  return { ke: s, tang:0, o:0, outOfRange:true, rawKe:s };
+}
+function parseBinCell(raw, fallbackO){
+  const s = String(raw || '').trim();
+  if (!s || s === '0') return { o: fallbackO || 0, bins: fallbackO ? [fallbackO] : [], isMulti:false, rawBin:'' };
+  const parts = s.split(/[.,\/\-;\s]+/).map(x => parseInt(x, 10)).filter(n => n >= 1 && n <= SO_O);
+  const uniq = Array.from(new Set(parts));
+  return {
+    o: uniq[0] || fallbackO || 0,
+    bins: uniq,
+    isMulti: uniq.length > 1 || (s.includes('.') && parts.length >= 1),
+    rawBin: s
+  };
+}
+
+function parseReconRows(rows, direction, fileName){
+  if (!rows || !rows.length) return { lines:[], skipped:0, columns:'', audit:null, error: fileName + ': file trống' };
+  const aliases = {
+    maVT:   ['mamutbs','mamu','magiay','mavattu','mavt','mabtp','mahang','masp','itemcode','article','sku','code','item','ma'],
+    tenVT:  ['tenmu','tenvattu','tenvt','tenhang','itemname','ten'],
+    po:     ['tbspo','po','mapo','sopo','customerpo'],
+    so:     ['so','maso','sodon','soorder'],
+    model:  ['model','mamodel','khuon','makhuon','mold','style'],
+    mau:    ['mau','mausac','color','he','hekhuon'],
+    size:   ['size','co','kichco','sz'],
+    slkh:   ['slkh','slkehoach','soluongkehoach','kehoach','planqty','plan'],
+    qtyIn:  ['tongnhap','nhap','soluongnhap','slnhap','thucnhap','nhapkho'],
+    qtyOut: ['tongxuat','xuat','soluongxuat','slxuat','thucxuat','xuatkho'],
+    ton:    ['tonmu','tonde','tonbtp','tonkho','ton','tongton','conlai','thucdem'],
+    qty:    ['soluong','sl','qty','quantity'],
+    shelf:  ['ke','make','vitrike','kekho','ketango','shelf','rack','vitri','location'],
+    floor:  ['tang','tangke','vitritang','floor','tier'],
+    bin:    ['o','mao','vitrio','ngan','cell','bin'],
+    date:   ['ngay','ngaygio','thoigian','date']
+  };
+  let headerRow = -1, idx = {}, dupRightCols = [];
+  for (let r = 0; r < Math.min(40, rows.length); r++) {
+    const h = (rows[r] || []).map(reconHeaderKey);
+    const cand = {};
+    Object.keys(aliases).forEach(k => {
+      const al = aliases[k];
+      for (let c = 0; c < h.length; c++) {
+        if (!h[c] || Object.values(cand).includes(c)) continue;
+        if (al.some(a => h[c] === a || (a.length >= 4 && h[c].includes(a)))) { cand[k] = c; break; }
+      }
+    });
+    if (cand.maVT !== undefined && (cand.qtyIn !== undefined || cand.qtyOut !== undefined || cand.ton !== undefined || cand.slkh !== undefined || cand.qty !== undefined)) {
+      headerRow = r; idx = cand;
+      for (let c = (cand.ton || 12) + 1; c < h.length; c++) {
+        if (['ke','o','tang','nhap','xuat','tonmu','tonde'].includes(h[c])) dupRightCols.push((rows[r][c] || '') + ' (cột ' + (c + 1) + ')');
+      }
+      break;
+    }
+  }
+  if (headerRow < 0) return { lines:[], skipped:0, columns:'', audit:null, error: fileName + ': không nhận diện được dòng tiêu đề (cần cột Mã mũ/Mã giày và Nhập/Xuất/Tồn/SLKH)' };
+
+  const colNames = Object.keys(idx).map(k => k + '="' + String(rows[headerRow][idx[k]] || '').trim() + '"').join(', ');
+  const lines = [];
+  let skipped = 0, zeroSkipped = 0, summaryRowSkipped = 0;
+  const outOfRangeRacks = [], multiBinRows = [], mathMismatchRows = [], uniqueMaGiay = new Set(), uniquePO = new Set();
+
+  for (let r = headerRow + 1; r < rows.length; r++) {
+    const row = rows[r] || [];
+    const cell = k => idx[k] !== undefined && row[idx[k]] != null ? String(row[idx[k]]).trim() : '';
+    const rawMa = cell('maVT').toUpperCase().replace(/^(VT|MU):\s*/, '');
+    const rawPo = cell('po').toUpperCase();
+    const rawSo = cell('so').toUpperCase();
+
+    // Bỏ qua dòng công thức SUBTOTAL ở dòng 2 (ví dụ MÃ GIÀY = 0 và PO trống) hoặc dòng trống / dòng TỔNG
+    if ((!rawMa || rawMa === '0') && (!rawPo || rawPo === '0')) {
+      if (r === headerRow + 1 && (reconNum(cell('qtyIn')) > 0 || reconNum(cell('ton')) > 0)) summaryRowSkipped++;
+      else zeroSkipped++;
+      skipped++;
+      continue;
+    }
+    if (!rawMa || /^(TỔNG|TONG|TOTAL|STT|0)$/i.test(rawMa)) { skipped++; continue; }
+
+    uniqueMaGiay.add(rawMa);
+    if (rawPo && rawPo !== '0') uniquePO.add(rawPo);
+
+    const locParsed = normRackCode(cell('shelf'));
+    const rawT = parseInt(cell('floor').replace(/[^\d]/g, ''), 10) || locParsed.tang || 0;
+    const binParsed = parseBinCell(cell('bin'), locParsed.o);
+
+    const qInRaw = reconNum(cell('qtyIn'));
+    const qOutRaw = reconNum(cell('qtyOut'));
+    const qSlkhRaw = reconNum(cell('slkh'));
+    const qTonRaw = reconNum(cell('ton'));
+    const qSingle = reconNum(cell('qty'));
+
+    const hasSlkh = isFinite(qSlkhRaw) && cell('slkh') !== '';
+    const hasTon = isFinite(qTonRaw) && cell('ton') !== '';
+    let inQty = isFinite(qInRaw) && qInRaw > 0 ? qInRaw : 0;
+    let outQty = isFinite(qOutRaw) && qOutRaw > 0 ? qOutRaw : 0;
+    if (direction === 'in' && !inQty && isFinite(qSingle) && qSingle > 0) inQty = qSingle;
+    if (direction === 'out' && !outQty && isFinite(qSingle) && qSingle > 0) outQty = qSingle;
+    if (direction === 'mixed' && !inQty && !outQty && !hasTon && !hasSlkh && isFinite(qSingle)) {
+      if (qSingle >= 0) inQty = qSingle; else outQty = Math.abs(qSingle);
+    }
+    const tonFile = hasTon ? qTonRaw : 0;
+
+    if (locParsed.outOfRange) {
+      outOfRangeRacks.push({ row: r + 1, maGiay: rawMa, po: rawPo, ke: locParsed.ke, rawKe: locParsed.rawKe, ton: tonFile });
+    }
+    if (binParsed.isMulti) {
+      multiBinRows.push({ row: r + 1, maGiay: rawMa, po: rawPo, ke: locParsed.ke, rawBin: binParsed.rawBin, o: binParsed.o, ton: tonFile });
+    }
+    if (hasTon && (inQty - outQty !== tonFile)) {
+      mathMismatchRows.push({ row: r + 1, maGiay: rawMa, po: rawPo, inQty, outQty, tonFile });
+    }
+
+    lines.push({
+      maGiay: rawMa,
+      maVT: rawMa,
+      ten: cell('tenVT') || rawMa,
+      po: (rawPo && rawPo !== '0') ? rawPo : '',
+      so: (rawSo && rawSo !== '0') ? rawSo : '',
+      model: cell('model').toUpperCase(),
+      mau: cell('mau'),
+      size: cell('size'),
+      ke: locParsed.outOfRange ? '' : locParsed.ke,
+      rawKe: locParsed.ke,
+      keOutOfRange: locParsed.outOfRange,
+      tang: rawT >= 1 && rawT <= SO_TANG ? rawT : 0,
+      o: binParsed.o >= 1 && binParsed.o <= SO_O ? binParsed.o : 0,
+      rawBin: binParsed.rawBin,
+      multiBin: binParsed.isMulti,
+      multiBins: binParsed.bins,
+      slkh: hasSlkh ? qSlkhRaw : 0,
+      hasSlkh,
+      inQty,
+      outQty,
+      tonFile,
+      hasTon,
+      direction,
+      file: fileName
+    });
+  }
+  const audit = {
+    fileName,
+    validCount: lines.length,
+    uniqueMaGiayCount: uniqueMaGiay.size,
+    uniquePOCount: uniquePO.size,
+    summaryRowSkipped,
+    zeroSkipped,
+    dupRightCols,
+    outOfRangeRacks,
+    multiBinRows,
+    mathMismatchCount: mathMismatchRows.length
+  };
+  return { lines, skipped, columns: colNames, audit, error: lines.length ? '' : fileName + ': không có dòng dữ liệu hợp lệ' };
+}
+
+function parseCsvTextToRows(text){
+  const sep = text.indexOf('\t') >= 0 ? '\t' : (text.indexOf(';') >= 0 && text.indexOf(',') < 0 ? ';' : ',');
+  return text.split(/\r?\n/).filter(l => l.trim()).map(line => {
+    const out = []; let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQ = !inQ; continue; }
+      if (ch === sep && !inQ) { out.push(cur.trim()); cur = ''; continue; }
+      cur += ch;
+    }
+    out.push(cur.trim());
+    return out;
+  });
+}
+
+async function readExcelOrCsvFile(file, onProgress){
+  const name = file.name || 'file';
+  if (/\.csv|\.txt|\.tsv$/i.test(name) || typeof XLSX === 'undefined') {
+    const txt = await file.text();
+    return [{ name: 'Sheet1', rows: parseCsvTextToRows(txt) }];
+  }
+  if (onProgress) onProgress('Đang nạp file ' + name + ' (' + (file.size > 1048576 ? (file.size / 1048576).toFixed(1) + ' MB' : (file.size / 1024).toFixed(0) + ' KB') + ')...');
+  await new Promise(r => setTimeout(r, 40));
+
+  const buf = await file.arrayBuffer();
+
+  if (onProgress) onProgress('Đang quét danh sách sheet trong file...');
+  await new Promise(r => setTimeout(r, 40));
+
+  // 1. Quét nhanh tiêu đề danh sách Sheet (bookSheets: true cực nhanh, không đơ)
+  let sheetNames = [];
+  try {
+    const wbSheets = XLSX.read(buf, { type: 'array', bookSheets: true });
+    sheetNames = wbSheets.SheetNames || [];
+  } catch (e) {
+    sheetNames = [];
+  }
+
+  // 2. Tự động tìm sheet MŨ BTP trước
+  const muSheetName = sheetNames.find(sn => isMuBtpSheetName(sn));
+  const sheetsToRead = muSheetName ? [muSheetName] : (sheetNames.length ? sheetNames.slice(0, 5) : null);
+
+  if (onProgress) {
+    onProgress(muSheetName ? 'Đang đọc trực tiếp sheet "' + muSheetName.trim() + '" (bỏ qua 27 sheet khác)...' : 'Đang xử lý bảng tính...');
+  }
+  await new Promise(r => setTimeout(r, 40));
+
+  // 3. Đọc đúng sheet cần thiết để tiết kiệm RAM & CPU
+  const readOpts = { type: 'array' };
+  if (sheetsToRead && sheetsToRead.length) readOpts.sheets = sheetsToRead;
+
+  const wb = XLSX.read(buf, readOpts);
+  const resultNames = wb.SheetNames.filter(sn => wb.Sheets[sn]);
+
+  if (onProgress) onProgress('Đang chuyển đổi dòng dữ liệu...');
+  await new Promise(r => setTimeout(r, 30));
+
+  return resultNames.map(sn => ({
+    name: sn,
+    allSheetNames: sheetNames,
+    rows: XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: '' })
+  }));
+}
+
+function updateSheetSelectorOptions(){
+  const sel = $('#kkReconSheetSel');
+  if (!sel) return;
+  const curVal = sel.value || 'AUTO_MU_BTP';
+  const allSheets = [];
+  ['mixed','in','out'].forEach(dir => {
+    (kkRawUploads[dir] || []).forEach(f => {
+      (f.sheets || []).forEach(sh => {
+        const list = sh.allSheetNames || [sh.name];
+        list.forEach(sn => { if (!allSheets.includes(sn)) allSheets.push(sn); });
+      });
+    });
+  });
+  let html = '<option value="AUTO_MU_BTP">Tự động chỉ nhận sheet MŨ BTP (Khuyên dùng)</option>' +
+             '<option value="ALL">Đọc tất cả các sheet (' + allSheets.length + ' sheet)</option>';
+  allSheets.forEach(sn => {
+    const isMu = isMuBtpSheetName(sn);
+    html += '<option value="SHEET:' + esc(sn) + '">' + (isMu ? '[MŨ BTP] ' : 'Sheet: ') + esc(sn.trim()) + '</option>';
+  });
+  sel.innerHTML = html;
+  if ([...sel.options].some(o => o.value === curVal)) sel.value = curVal;
+}
+
+function rebuildReconFromCache(){
+  const sheetMode = ($('#kkReconSheetSel') && $('#kkReconSheetSel').value) || 'AUTO_MU_BTP';
+  const notes = [];
+  const audits = [];
+
+  ['mixed','in','out'].forEach(direction => {
+    const collected = [];
+    (kkRawUploads[direction] || []).forEach(fileObj => {
+      const sheets = fileObj.sheets || [];
+      const muSheets = sheets.filter(sh => isMuBtpSheetName(sh.name));
+      let targetSheets = sheets;
+      let ignoredNames = [];
+
+      if (sheetMode === 'AUTO_MU_BTP') {
+        if (muSheets.length > 0) {
+          targetSheets = muSheets;
+          ignoredNames = (sheets[0] && sheets[0].allSheetNames ? sheets[0].allSheetNames : sheets.map(s => s.name)).filter(sn => !isMuBtpSheetName(sn)).map(sn => sn.trim());
+        }
+      } else if (sheetMode.startsWith('SHEET:')) {
+        const wanted = sheetMode.slice(6);
+        targetSheets = sheets.filter(sh => sh.name === wanted);
+        ignoredNames = sheets.filter(sh => sh.name !== wanted).map(sh => sh.name.trim());
+      }
+
+      targetSheets.forEach(sh => {
+        const label = fileObj.fileName + (sheets.length > 1 ? ' [Sheet: ' + sh.name.trim() + ']' : '');
+        const res = parseReconRows(sh.rows, direction, label);
+        if (res.lines.length) {
+          collected.push(...res.lines);
+          if (res.audit) {
+            res.audit.ignoredSheets = ignoredNames;
+            audits.push(res.audit);
+          }
+          notes.push(label + ': ' + fmt(res.lines.length) + ' dòng hợp lệ' + (ignoredNames.length ? ' (đã bỏ qua ' + ignoredNames.length + ' sheet khác như ' + ignoredNames.slice(0, 3).join(', ') + '...)' : ''));
+        } else if (res.error) {
+          notes.push(res.error);
+        }
+      });
+    });
+
+    if (direction === 'mixed') kkReconMixed = collected;
+    else if (direction === 'in') kkReconIn = collected;
+    else if (direction === 'out') kkReconOut = collected;
+  });
+
+  kkReconAudit = audits[0] || null;
+  updateReconStatusText(notes.join(' · '));
+  renderReconAnomalies();
+}
+
+function renderReconAnomalies(){
+  const box = $('#kkReconAnomalies');
+  if (!box) return;
+  if (!kkReconAudit) { box.hidden = true; box.innerHTML = ''; return; }
+  const a = kkReconAudit;
+  const items = [];
+  if (a.ignoredSheets && a.ignoredSheets.length) {
+    items.push('<li><b>Đã tự động lọc đúng sheet <code>MŨ BTP</code>:</b> Bỏ qua <b>' + a.ignoredSheets.length + '</b> sheet khác trong cùng file (<code>' + esc(a.ignoredSheets.slice(0, 5).join(', ')) + (a.ignoredSheets.length > 5 ? ', ...' : '') + '</code>) để không bị trộn lẫn dữ liệu của <b>ĐẾ BTP</b> hoặc <b>DA BTP</b>.</li>');
+  }
+  if (a.uniqueMaGiayCount < a.validCount * 0.5 && a.uniquePOCount > a.uniqueMaGiayCount) {
+    items.push('<li><b>Cấu trúc khóa chính theo <code>PO</code> (1 Mã giày lặp lại nhiều PO):</b> Có <b>' + fmt(a.validCount) + '</b> dòng nhưng chỉ có <b>' + fmt(a.uniqueMaGiayCount) + '</b> Mã giày và tới <b>' + fmt(a.uniquePOCount) + '</b> mã PO. Hệ thống cung cấp chế độ <b>"Theo từng đơn PO"</b> (định danh <code>PO · MÃ GIÀY</code>) để không bị gộp đè 3.716 dòng thành 77 dòng.</li>');
+  }
+  if (a.outOfRangeRacks && a.outOfRangeRacks.length) {
+    const sampleKe = Array.from(new Set(a.outOfRangeRacks.map(x => x.rawKe))).join(', ');
+    items.push('<li><b>Phát hiện kệ vượt quá giới hạn 26 kệ (<code>K01–K26</code>):</b> Có <b>' + a.outOfRangeRacks.length + '</b> dòng ghi kệ <code>' + esc(sampleKe) + '</code>. Hệ thống đã mở rộng hỗ trợ trọn vẹn <b>26 kệ</b> (Dãy A: K01–K13, Dãy B: K14–K26).</li>');
+  }
+  if (a.multiBinRows && a.multiBinRows.length) {
+    const sampleBins = Array.from(new Set(a.multiBinRows.map(x => x.rawBin))).slice(0, 6).join(', ');
+    items.push('<li><b>Cột Ô ghi nhiều ô (<code>' + esc(sampleBins) + '</code>):</b> Ví dụ <code>1.2.3</code> là chiếm cả Ô 1, Ô 2 và Ô 3. Khi bấm <b>Cân tồn</b>, hệ thống sẽ tự động phân bổ đều số tồn sang đủ các ô này trên sơ đồ!</li>');
+  }
+  if (a.dupRightCols && a.dupRightCols.length) {
+    items.push('<li><b>Sheet có 2 cụm cột <code>KỆ - Ô - TẦNG - NHẬP - XUẤT - TỒN MŨ</code>:</b> Hệ thống chỉ lấy cụm cột chính bên trái (Cột H → M), tự động bỏ qua cụm cột phụ bên phải (Cột T → Y) để không bị nhân đôi số liệu.</li>');
+  }
+  if (a.zeroSkipped > 0 || a.summaryRowSkipped > 0) {
+    items.push('<li><b>Đã dọn sạch dòng công thức &amp; dòng trống:</b> Tự động bỏ qua <b>' + a.summaryRowSkipped + '</b> dòng tổng <code>SUBTOTAL</code> đầu bảng và <b>' + fmt(a.zeroSkipped) + '</b> dòng công thức thừa trả về số <code>0</code> ở cuối bảng.</li>');
+  }
+  if (a.mathMismatchCount > 0) {
+    items.push('<li><b>Lưu ý công thức Tồn trong file Excel:</b> Có <b>' + fmt(a.mathMismatchCount) + '</b> dòng trong sheet có <code>TỒN MŨ ≠ NHẬP - XUẤT</code> (do tồn đầu kỳ hoặc nhập/xuất bên bảng phụ). Hệ thống ưu tiên đối chiếu theo đúng cột <b>TỒN MŨ</b> của file.</li>');
+  }
+  if (!items.length) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.innerHTML =
+    '<div style="padding:12px 16px;border-radius:12px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:13px;line-height:1.55">' +
+      '<div style="font-weight:800;color:#b45309;margin-bottom:6px">PHÂN TÍCH &amp; XỬ LÝ DỮ LIỆU SHEET "MŨ BTP" TỰ ĐỘNG:</div>' +
+      '<ul style="margin:0;padding-left:18px">' + items.join('') + '</ul>' +
+    '</div>';
+}
+
+async function handleReconUpload(input, direction){
+  const files = Array.from(input.files || []);
+  if (!files.length) return;
+  const loadBox = $('#kkReconLoading');
+  const loadTxt = $('#kkReconLoadingText');
+  if (loadBox) { loadBox.hidden = false; }
+  const setMsg = txt => { if (loadTxt) loadTxt.textContent = txt; };
+
+  const loadedFiles = [];
+  try {
+    for (const f of files) {
+      const sheets = await readExcelOrCsvFile(f, setMsg);
+      loadedFiles.push({ fileName: f.name, sheets });
+    }
+    kkRawUploads[direction] = loadedFiles;
+    setMsg('Đang tổng hợp và đối chiếu bảng dữ liệu...');
+    await new Promise(r => setTimeout(r, 40));
+    updateSheetSelectorOptions();
+    rebuildReconFromCache();
+    reconcileRun();
+    toast('Đã nạp thành công sheet MŨ BTP (' + (kkReconResult ? kkReconResult.rows.length : 0) + ' dòng)', 'ok');
+  } catch (e) {
+    toast('Lỗi đọc file: ' + e.message, 'err');
+    if (loadBox) { loadBox.hidden = true; }
+  } finally {
+    if (loadBox) { loadBox.hidden = true; }
+  }
+}
+
+function updateReconStatusText(extra){
+  const all = kkReconMixed.concat(kkReconIn, kkReconOut);
+  if (!all.length) {
+    $('#kkReconFiles').textContent = extra || 'Chưa có dữ liệu file đối chiếu.';
+    return;
+  }
+  const nPlan = all.filter(x => x.hasSlkh).length;
+  const nIn = all.filter(x => x.inQty > 0).length;
+  const nOut = all.filter(x => x.outQty > 0).length;
+  const nTon = all.filter(x => x.hasTon).length;
+  $('#kkReconFiles').innerHTML = 'Đã nạp <b>' + all.length + '</b> dòng đối chiếu (SLKH: <b>' + nPlan + '</b> · Nhập: <b>' + nIn + '</b> · Xuất: <b>' + nOut + '</b> · Tồn file: <b>' + nTon + '</b>)' + (extra ? ' — ' + esc(extra) : '');
+}
+
+function parseLogIsoDate(str){
+  const s = String(str || '').trim();
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+  if (m) {
+    const y = m[3] ? (m[3].length === 2 ? '20' + m[3] : m[3]) : String(new Date().getFullYear());
+    return y + '-' + String(m[2]).padStart(2, '0') + '-' + String(m[1]).padStart(2, '0');
+  }
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[0] : '';
+}
+
+
+function showReconProgress(show, title, cur, total, step){
+  const modal = $('#reconProgressModal');
+  if (!modal) return;
+  modal.hidden = !show;
+  if (!show) return;
+  if (title && $('#rpmTitle')) $('#rpmTitle').textContent = title;
+  const pct = total > 0 ? Math.min(100, Math.round((cur / total) * 100)) : 0;
+  if ($('#rpmBar')) $('#rpmBar').style.width = pct + '%';
+  if ($('#rpmStep')) $('#rpmStep').textContent = step || ('Tiến độ: ' + cur + ' / ' + total + ' thao tác (' + pct + '%)');
+  if ($('#rpmText')) $('#rpmText').textContent = 'Đang gửi dữ liệu lên Google Sheet và cân đối tồn kho... (' + pct + '%)';
+}
+
+function reconcileRun(){
+  const allLines = kkReconMixed.concat(kkReconIn, kkReconOut);
+  if (!allLines.length) {
+    toast('Hãy chọn file đối chiếu hoặc bấm "Nạp dữ liệu file mẫu" trước', 'err');
+    return;
+  }
+  const fromDate = ($('#kkReconFrom') && $('#kkReconFrom').value) || '';
+  const toDate = ($('#kkReconTo') && $('#kkReconTo').value) || '';
+  const keyMode = ($('#kkReconKeyMode') && $('#kkReconKeyMode').value) || 'PO';
+
+  const byMa = {};
+  const maGiayToGroups = {};
+  const ensureGroup = (key, maGiay, tenDefault) => {
+    if (!byMa[key]) {
+      const it = itemOf(key) || itemOf(maGiay) || {};
+      byMa[key] = {
+        ma: key,
+        maGiay: maGiay || key,
+        ten: it.ten || tenDefault || maGiay || key,
+        po:'', so:'', model: it.model || '', mau: it.mau || '', size: it.size || '',
+        fileKe:'', rawKe:'', keOutOfRange:false, fileTang:0, fileO:0, rawBin:'', multiBin:false, multiBins:[],
+        extPlan:0, hasExtPlan:false, extIn:0, extOut:0, extStock:0, hasExtStock:false,
+        appIn:0, appOut:0, appStock:0, appLocs:[]
+      };
+      if (maGiay) {
+        if (!maGiayToGroups[maGiay]) maGiayToGroups[maGiay] = [];
+        maGiayToGroups[maGiay].push(byMa[key]);
+      }
+    }
+    return byMa[key];
+  };
+
+  allLines.forEach(l => {
+    const mg = l.maGiay || l.maVT;
+    const key = (keyMode === 'PO' && l.po) ? l.po : mg;
+    const g = ensureGroup(key, mg, (keyMode === 'PO' && l.po) ? mg : (l.ten || mg));
+    if (l.ten && l.ten !== l.maVT && keyMode !== 'PO') g.ten = l.ten;
+    else if (keyMode === 'PO') g.ten = mg;
+    if (l.po) g.po = g.po && g.po !== l.po ? (g.po.split(', ').length < 3 ? g.po + ', ' + l.po : g.po) : l.po;
+    if (l.so) g.so = l.so;
+    if (l.model) g.model = l.model;
+    if (l.mau) g.mau = l.mau;
+    if (l.size) g.size = l.size;
+    if (l.rawKe) { g.rawKe = l.rawKe; g.keOutOfRange = g.keOutOfRange || !!l.keOutOfRange; }
+    if (l.ke) { g.fileKe = l.ke; g.fileTang = l.tang || g.fileTang; g.fileO = l.o || g.fileO; }
+    if (l.rawBin) { g.rawBin = l.rawBin; g.multiBin = g.multiBin || !!l.multiBin; g.multiBins = l.multiBins || g.multiBins; }
+    if (l.hasSlkh) { g.extPlan += l.slkh; g.hasExtPlan = true; }
+    g.extIn += l.inQty || 0;
+    g.extOut += l.outQty || 0;
+    if (l.hasTon) { g.extStock += l.tonFile; g.hasExtStock = true; }
+  });
+
+  // Cộng tồn thực tế trên App cho các mã có trong file đối chiếu (hỗ trợ khớp theo PO hoặc theo Mã giày)
+  stockRows().forEach(r => {
+    const gDirect = byMa[r.maVT];
+    const gFallback = !gDirect && keyMode === 'PO' && maGiayToGroups[r.maVT] && maGiayToGroups[r.maVT].length === 1 ? maGiayToGroups[r.maVT][0] : null;
+    const g = gDirect || gFallback;
+    if (!g) return;
+    g.appStock += r.soLuong;
+    g.appLocs.push({ ke:r.ke, tang:r.tang, o:r.o, soLuong:r.soLuong });
+  });
+
+  // Cộng giao dịch Nhập / Xuất trên App (lọc theo Từ ngày - Đến ngày nếu có)
+  getAllLogs().forEach(lg => {
+    if (!lg.maVT) return;
+    const gDirect = byMa[lg.maVT];
+    const gFallback = !gDirect && keyMode === 'PO' && maGiayToGroups[lg.maVT] && maGiayToGroups[lg.maVT].length === 1 ? maGiayToGroups[lg.maVT][0] : null;
+    const g = gDirect || gFallback;
+    if (!g) return;
+    if (fromDate || toDate) {
+      const d = parseLogIsoDate(lg.thoiGian);
+      if (d && ((fromDate && d < fromDate) || (toDate && d > toDate))) return;
+    }
+    const sl = Number(lg.soLuong) || 0;
+    if (lg.loai === 'NHAP') g.appIn += Math.abs(sl);
+    else if (lg.loai === 'XUAT') g.appOut += Math.abs(sl);
+  });
+
+  const rows = Object.values(byMa).map(g => {
+    g.appLocs.sort((a, b) => b.soLuong - a.soLuong);
+    const topApp = g.appLocs[0] || { ke:'', tang:0, o:0 };
+    const appKe = Array.from(new Set(g.appLocs.map(x => x.ke))).join(', ');
+    const appTang = topApp.tang || 0;
+    const appO = topApp.o || 0;
+
+    const targetStock = g.hasExtStock ? g.extStock : Math.max(0, g.extIn - g.extOut);
+    const inDiff = g.appIn - g.extIn;
+    const outDiff = g.appOut - g.extOut;
+    const stockDiff = g.appStock - targetStock;
+
+    const isPlanOnly = g.hasExtPlan && targetStock === 0 && g.appStock === 0 && g.extIn === 0;
+    const isDoneOrder = (g.extIn > 0 && g.extOut >= g.extIn && targetStock === 0 && g.appStock === 0);
+    const isNoShelf = (targetStock > 0 || g.appStock > 0) && !g.fileKe && !appKe;
+    const isLocDiff = !!(g.keOutOfRange || (g.fileKe && appKe && !g.appLocs.some(l => l.ke === g.fileKe && (!g.fileTang || l.tang === g.fileTang) && (!g.fileO || l.o === g.fileO))));
+    const isQtyDiff = g.hasExtStock ? (stockDiff !== 0) : ((g.extIn > 0 && inDiff !== 0) || (g.extOut > 0 && outDiff !== 0));
+    
+    // Đồng bộ chuẩn lên Sheet
+    const isStockMatched = targetStock === g.appStock;
+    const isFullySyncedOnSheet = (isStockMatched && !isLocDiff && (!isNoShelf || g.appStock > 0)) || (isDoneOrder && !isQtyDiff);
+    const ok = isFullySyncedOnSheet;
+
+    let status = 'Khớp hoàn toàn';
+    if (g.keOutOfRange) status = 'Kệ ' + g.rawKe + ' vượt K' + SO_KE;
+    else if (isPlanOnly) status = 'Chỉ có SLKH (chưa nhập)';
+    else if (isDoneOrder) status = 'Đã xuất hết (tồn 0)';
+    else if (isNoShelf && g.appStock === targetStock && targetStock > 0) status = '✔ Đã lưu Sheet · ⚠️ Chờ xếp kệ';
+    else if (isNoShelf) status = '⚠️ Tồn chưa xếp kệ';
+    else if (stockDiff !== 0 && isLocDiff) status = 'Lệch tồn & vị trí';
+    else if (stockDiff !== 0) status = (stockDiff > 0 ? 'Thừa tồn +' : 'Thiếu tồn ') + fmt(stockDiff);
+    else if (isLocDiff) status = 'Lệch Kệ / Tầng / Ô';
+    else if (isQtyDiff) status = 'Lệch Nhập / Xuất';
+
+    return Object.assign(g, {
+      appKe, appTang, appO, targetStock,
+      inDiff, outDiff, stockDiff,
+      isPlanOnly, isDoneOrder, isNoShelf, isLocDiff, isQtyDiff, isFullySyncedOnSheet, ok, status
+    });
+  }).sort((a, b) => {
+    const score = x => (x.keOutOfRange ? 6 : 0) + (x.isNoShelf && !x.isFullySyncedOnSheet ? 5 : 0) + (x.targetStock > 0 && !x.ok ? 4 : 0) + (x.targetStock > 0 ? 3 : 0) + (!x.ok ? 1 : 0);
+    const d = score(b) - score(a);
+    return d !== 0 ? d : a.ma.localeCompare(b.ma);
+  });
+
+  kkReconResult = { rows };
+  renderReconResult();
+}
+
+function diffCellHtml(d){
+  if (!d) return '<span class="d-zero">0</span>';
+  return '<span class="' + (d > 0 ? 'd-pos' : 'd-neg') + '">' + (d > 0 ? '+' : '') + fmt(d) + '</span>';
+}
+
+function renderReconResult(){
+  if (!kkReconResult) return;
+  const rows = kkReconResult.rows;
+  const noShelfN = rows.filter(x => x.isNoShelf).length;
+  const planOnlyN = rows.filter(x => x.isPlanOnly).length;
+  const locDiffN = rows.filter(x => x.isLocDiff).length;
+  const diffN = rows.filter(x => x.isQtyDiff).length;
+  const okN = rows.filter(x => x.ok).length;
+
+  // Lọc chỉ những dòng có phát sinh tồn kho thực tế
+  const stockRowsList = rows.filter(x => x.targetStock > 0);
+  const totalStockRows = stockRowsList.length;
+  const syncedStockRows = stockRowsList.filter(x => x.appStock === x.targetStock && !x.isLocDiff).length;
+
+  $('#cntFilterAll').textContent = fmt(rows.length);
+  $('#cntFilterNoShelf').textContent = fmt(noShelfN);
+  $('#cntFilterPlanOnly').textContent = fmt(planOnlyN);
+  $('#cntFilterLocDiff').textContent = fmt(locDiffN);
+  $('#cntFilterDiff').textContent = fmt(diffN);
+  $('#cntFilterOk').textContent = fmt(okN);
+
+  $('#kkReconFilterTabs').hidden = false;
+  $('#kkReconTableWrap').hidden = false;
+  $('#kkReconExport').disabled = !rows.length;
+  $('#kkReconClear').hidden = false;
+
+  const sum = rows.reduce((a, r) => {
+    a.plan += r.extPlan; a.fIn += r.extIn; a.aIn += r.appIn;
+    a.fOut += r.extOut; a.aOut += r.appOut; a.fStk += r.targetStock; a.aStk += r.appStock;
+    return a;
+  }, { plan:0, fIn:0, aIn:0, fOut:0, aOut:0, fStk:0, aStk:0 });
+
+  const stockSyncPct = sum.fStk > 0 ? Math.min(100, Math.round((sum.aStk / sum.fStk) * 100)) : 100;
+  const stockRowPct = totalStockRows > 0 ? Math.min(100, Math.round((syncedStockRows / totalStockRows) * 100)) : 100;
+
+  // Nút Lưu chênh lệch & Đồng bộ lên Sheet
+  const adjustBtn = $('#kkReconSaveAdjust');
+  if (adjustBtn) {
+    adjustBtn.hidden = false;
+    const needSyncRows = Math.max(0, totalStockRows - syncedStockRows);
+    if (needSyncRows > 0) {
+      adjustBtn.innerHTML = '💾 Lưu chênh lệch &amp; Đồng bộ ' + fmt(needSyncRows) + ' mã tồn lên Sheet';
+      adjustBtn.className = 'btn btn-pri btn-sm';
+    } else {
+      adjustBtn.innerHTML = '✔ Đã đồng bộ 100% (' + fmt(totalStockRows) + ' mã tồn trên Sheet)';
+      adjustBtn.className = 'btn btn-ghost btn-sm';
+    }
+  }
+
+  const isFull100 = (syncedStockRows === totalStockRows && totalStockRows > 0);
+  const statusBadge = isFull100
+    ? '<span class="tag tag-ok" style="font-size:13px;font-weight:800;padding:6px 12px">✔ ĐÃ LƯU &amp; ĐỒNG BỘ 100% LÊN GOOGLE SHEET</span>'
+    : '<span class="tag tag-XUAT" style="font-size:13px;font-weight:700;padding:6px 12px">⏳ Tiến độ lưu Sheet: ' + fmt(syncedStockRows) + ' / ' + fmt(totalStockRows) + ' mã tồn (' + stockRowPct + '%)</span>';
+
+  $('#kkReconSummary').innerHTML =
+    '<div style="margin-bottom:12px;padding:14px 16px;border-radius:14px;background:#f8fafc;border:1.5px solid var(--line)">' +
+      '<div class="row wrap" style="justify-content:space-between;margin-bottom:8px;gap:8px">' +
+        '<div>' +
+          '<b style="font-size:14px;color:var(--ink)">TIẾN ĐỘ ĐỒNG BỘ TỒN MŨ THEO FILE LÊN GOOGLE SHEET</b>' +
+          '<div class="small muted" style="margin-top:2px">Hệ thống đối chiếu 4 cột: Kế hoạch (SLKH), Nhập, Xuất, Tồn mũ. Tách riêng 2,033 đơn hàng chỉ có kế hoạch ở bảng bên dưới.</div>' +
+        '</div>' +
+        '<div>' + statusBadge + '</div>' +
+      '</div>' +
+      '<div class="bar-track" style="height:10px;background:#e2e8f0;border-radius:99px;overflow:hidden">' +
+        '<div class="bar-fill" style="width:' + Math.max(3, stockRowPct) + '%;background:' + (isFull100 ? 'var(--emerald-600)' : 'linear-gradient(90deg,#0d9488,#0284c7)') + ';height:100%;transition:width .3s"></div>' +
+      '</div>' +
+      '<div class="row wrap small" style="justify-content:space-between;margin-top:8px;color:var(--muted)">' +
+        '<span>• Tiến độ Tồn mũ trên Sheet / File: <b style="color:var(--brand)">' + fmt(sum.aStk) + ' / ' + fmt(sum.fStk) + ' đôi (' + stockSyncPct + '%)</b></span>' +
+        '<span>• Tiến độ Mã tồn đã lưu Sheet: <b>' + fmt(syncedStockRows) + ' / ' + fmt(totalStockRows) + ' mã (' + stockRowPct + '%)</b></span>' +
+        (sum.plan > 0 ? ('<span>• Tổng SLKH từ file: <b>' + fmt(sum.plan) + ' đôi</b></span>') : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="recon-kpis">' +
+      '<div class="rk-card"><div class="rk-lbl">1. SLKH (File)</div><div class="rk-val">' + fmt(sum.plan) + '</div></div>' +
+      '<div class="rk-card"><div class="rk-lbl">2. Nhập (File / App)</div><div class="rk-val">' + fmt(sum.fIn) + ' / ' + fmt(sum.aIn) + '</div></div>' +
+      '<div class="rk-card"><div class="rk-lbl">3. Xuất (File / App)</div><div class="rk-val">' + fmt(sum.fOut) + ' / ' + fmt(sum.aOut) + '</div></div>' +
+      '<div class="rk-card"><div class="rk-lbl">4. Tồn mũ (File / App)</div><div class="rk-val">' + fmt(sum.fStk) + ' / ' + fmt(sum.aStk) + ' (' + stockSyncPct + '%)</div></div>' +
+      '<div class="rk-card"><div class="rk-lbl">5. Tồn chưa xếp kệ</div><div class="rk-val" style="color:var(--rose-700)">' + fmt(noShelfN) + ' dòng</div></div>' +
+      '<div class="rk-card"><div class="rk-lbl">6. Chưa tồn (Chỉ SLKH)</div><div class="rk-val" style="color:var(--sky-700)">' + fmt(planOnlyN) + ' dòng</div></div>' +
+    '</div>';
+
+  const filtered = rows.filter(x => {
+    if (kkReconFilter === 'noShelf') return x.isNoShelf;
+    if (kkReconFilter === 'planOnly') return x.isPlanOnly;
+    if (kkReconFilter === 'locDiff') return x.isLocDiff;
+    if (kkReconFilter === 'diff') return x.isQtyDiff;
+    if (kkReconFilter === 'ok') return x.ok;
+    // Mặc định tab "Tất cả": Ưu tiên hiển thị các mã có phát sinh tồn kho thực tế hoặc có nhập xuất để bảng không bị ngập 2,033 mã kế hoạch
+    return x.targetStock > 0 || x.appStock > 0 || x.isLocDiff || (x.extIn > 0 && x.extOut > 0);
+  });
+
+  const displayRows = filtered.slice(0, 350);
+  const moreNote = filtered.length > displayRows.length
+    ? '<tr><td colspan="19" class="muted" style="text-align:center;padding:12px;background:#f8fafc">Đang hiển thị <b>' + fmt(displayRows.length) + ' / ' + fmt(filtered.length) + '</b> dòng ưu tiên (các dòng có kệ &amp; có tồn mũ hiển thị lên đầu). Bấm <b>"Tải báo cáo Excel (.csv)"</b> để xuất toàn bộ ' + fmt(rows.length) + ' dòng.</td></tr>'
+    : '';
+
+  $('#kkReconBody').innerHTML = (displayRows.map(x => {
+    const idx = rows.indexOf(x);
+    const meta = [x.model, x.mau, x.size && 'Sz ' + x.size].filter(Boolean).join(' · ') || '—';
+    const keHtml = x.keOutOfRange
+      ? '<span class="tag tag-err mono" title="Kho Mũ chỉ có ' + SO_KE + ' kệ (K01-K' + (SO_KE < 10 ? '0' : '') + SO_KE + ')">' + esc(x.rawKe) + ' (>K' + SO_KE + ')</span>'
+      : (x.fileKe && x.appKe
+        ? (x.isLocDiff ? '<span class="d-neg">F:' + esc(x.fileKe) + '</span> / <span style="color:var(--sky-700);font-weight:700">A:' + esc(x.appKe) + '</span>' : '<span class="tag tag-NHAP mono">' + esc(x.fileKe) + '</span>')
+        : (x.fileKe ? '<span class="tag tag-KIEMKE mono">F:' + esc(x.fileKe) + '</span>' : (x.appKe ? '<span class="tag tag-NHAP mono">A:' + esc(x.appKe) + '</span>' : '<span class="d-neg">Chưa kệ</span>')));
+    const tHtml = (x.fileTang || x.appTang) ? ('T' + (x.fileTang || x.appTang)) : '—';
+    const oHtml = x.multiBin
+      ? ('Ô ' + (x.fileO || x.appO || 1) + ' <span class="xs muted" title="File ghi nhiều ô: ' + esc(x.rawBin) + '">(' + esc(x.rawBin) + ')</span>')
+      : ((x.fileO || x.appO) ? ('Ô ' + (x.fileO || x.appO)) : '—');
+    const stCls = x.ok ? 'tag-ok' : (x.keOutOfRange || x.isNoShelf || x.stockDiff !== 0 ? 'tag-err' : 'tag-XUAT');
+
+    return '<tr>' +
+      '<td><b class="mono">' + esc(x.ma) + '</b><div class="xs muted">' + esc(x.ten) + '</div></td>' +
+      '<td class="mono">' + esc(x.po || '—') + '</td>' +
+      '<td class="mono">' + esc(x.so || '—') + '</td>' +
+      '<td>' + esc(meta) + '</td>' +
+      '<td class="num-tab" style="text-align:right;font-weight:700">' + (x.hasExtPlan ? fmt(x.extPlan) : '—') + '</td>' +
+      '<td>' + keHtml + '</td>' +
+      '<td class="mono" style="text-align:center">' + tHtml + '</td>' +
+      '<td class="mono" style="text-align:center">' + oHtml + '</td>' +
+      '<td class="num-tab" style="text-align:right">' + fmt(x.extIn) + '</td>' +
+      '<td class="num-tab" style="text-align:right">' + fmt(x.appIn) + '</td>' +
+      '<td class="num-tab" style="text-align:center">' + diffCellHtml(x.inDiff) + '</td>' +
+      '<td class="num-tab" style="text-align:right">' + fmt(x.extOut) + '</td>' +
+      '<td class="num-tab" style="text-align:right">' + fmt(x.appOut) + '</td>' +
+      '<td class="num-tab" style="text-align:center">' + diffCellHtml(x.outDiff) + '</td>' +
+      '<td class="num-tab" style="text-align:right;font-weight:800;color:var(--brand)">' + fmt(x.targetStock) + '</td>' +
+      '<td class="num-tab" style="text-align:right;font-weight:800">' + fmt(x.appStock) + '</td>' +
+      '<td class="num-tab" style="text-align:center">' + diffCellHtml(x.stockDiff) + '</td>' +
+      '<td><span class="tag ' + stCls + '">' + esc(x.status) + '</span></td>' +
+      '<td style="text-align:center">' +
+        '<div class="row" style="gap:4px;justify-content:center">' +
+          (!x.ok && !x.keOutOfRange ? '<button type="button" class="btn btn-pri btn-sm" data-rfix="' + idx + '">Cân tồn</button>' : '') +
+          '<button type="button" class="btn btn-ghost btn-sm" data-rass="' + idx + '" title="Gán vị trí kệ">⚡ Xếp kệ</button>' +
+          (x.appLocs.length || x.fileKe ? '<button type="button" class="btn btn-ghost btn-sm" data-rloc="' + idx + '">Định vị</button>' : '') +
+        '</div>' +
+      '</td>' +
+    '</tr>';
+  }).join('') + moreNote) || '<tr><td colspan="19" class="muted" style="text-align:center;padding:18px">Không có dòng nào thuộc bộ lọc này.</td></tr>';
+
+  $('#kkReconBody').querySelectorAll('[data-rfix]').forEach(b => b.onclick = () => applyReconRow(+b.dataset.rfix));
+  $('#kkReconBody').querySelectorAll('[data-rass]').forEach(b => b.onclick = () => assignShelfForReconRow(+b.dataset.rass));
+  $('#kkReconBody').querySelectorAll('[data-rloc]').forEach(b => b.onclick = () => {
+    const r = rows[+b.dataset.rloc];
+    const targets = r.appLocs.length ? r.appLocs : (r.fileKe ? [{ ke:r.fileKe, tang:r.fileTang || 1, o:r.fileO || 1 }] : []);
+    if (targets.length) go('map', targets);
+  });
+
+  renderKkPlanOnlySection();
+}
+
+function renderKkPlanOnlySection(){
+  const wrap = $('#kkPlanOnlyWrap');
+  if (!wrap) return;
+  if (!kkReconResult || !Array.isArray(kkReconResult.rows)) {
+    wrap.innerHTML = '';
+    return;
+  }
+  const planOnlyRows = kkReconResult.rows.filter(x => x.isPlanOnly);
+  if (!planOnlyRows.length) {
+    wrap.innerHTML = '';
+    return;
+  }
+  const totalPlanPairs = planOnlyRows.reduce((acc, r) => acc + (r.extPlan || 0), 0);
+  wrap.innerHTML =
+    '<div class="panel" style="margin-top:20px;border:1.5px solid #7dd3fc;background:#f0f9ff;border-radius:14px;padding:16px">' +
+      '<div class="row wrap" style="justify-content:space-between;margin-bottom:12px;gap:12px">' +
+        '<div>' +
+          '<div style="font-size:15px;font-weight:800;color:#0369a1;display:flex;align-items:center;gap:6px">' +
+            '<span>📋</span> DANH SÁCH MÃ CHỈ CÓ KẾ HOẠCH (SLKH) — CHƯA CÓ TỒN MŨ TRONG KHO (' + fmt(planOnlyRows.length) + ' mã · ' + fmt(totalPlanPairs) + ' đôi)' +
+          '</div>' +
+          '<div class="small" style="color:#0c4a6e;margin-top:4px">' +
+            'Dành cho thủ kho: Đây là các đơn hàng <b>mới có Lệnh kế hoạch</b> ghi trên file kiểm soát, <b>hàng thực tế chưa về xưởng (Tồn kho = 0)</b>. ' +
+            'Thủ kho <b>KHÔNG cần cho công nhân đi tìm xếp kệ</b> lúc này. Có thể bấm "Quy hoạch kệ trước" để định sẵn vị trí đón hàng.' +
+          '</div>' +
+        '</div>' +
+        '<div>' +
+          '<input type="text" id="kkPlanOnlySearch" class="inp" placeholder="Lọc theo PO / SO / Mã giày..." style="max-width:260px;padding:6px 10px;font-size:13px" oninput="filterPlanOnlyTable(this.value)">' +
+        '</div>' +
+      '</div>' +
+      '<div class="tbl-wrap" style="max-height:420px;overflow-y:auto;background:#fff;border-radius:10px;border:1px solid #bae6fd">' +
+        '<table class="recon-tbl" id="kkPlanOnlyTable" style="font-size:12px;white-space:nowrap">' +
+          '<thead>' +
+            '<tr style="background:#e0f2fe;color:#0369a1">' +
+              '<th>MÃ GIÀY / TÊN MŨ</th>' +
+              '<th>PO / SO</th>' +
+              '<th>MODEL / MÀU / SIZE</th>' +
+              '<th style="text-align:right">SL KẾ HOẠCH (SLKH)</th>' +
+              '<th style="text-align:center">TỒN MŨ THỰC TẾ</th>' +
+              '<th>TRẠNG THÁI</th>' +
+              '<th>GHI CHÚ CHO THỦ KHO</th>' +
+              '<th style="text-align:center">THAO TÁC</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody>' +
+            planOnlyRows.map((r, pIdx) => {
+              const origIdx = kkReconResult.rows.indexOf(r);
+              const meta = [r.model, r.mau, r.size && 'Sz ' + r.size].filter(Boolean).join(' · ') || '—';
+              return '<tr data-search="' + esc((r.ma + ' ' + (r.ten||'') + ' ' + (r.po||'') + ' ' + (r.so||'')).toUpperCase()) + '">' +
+                '<td><b>' + esc(r.ma) + '</b><div class="xs muted">' + esc(r.ten || r.ma) + '</div></td>' +
+                '<td>' + (r.po ? ('<b style="color:#0284c7">PO: ' + esc(r.po) + '</b>') : '—') + (r.so ? ('<div class="xs muted">SO: ' + esc(r.so) + '</div>') : '') + '</td>' +
+                '<td>' + esc(meta) + '</td>' +
+                '<td style="text-align:right;font-weight:700;color:#0369a1">' + fmt(r.extPlan) + ' đôi</td>' +
+                '<td style="text-align:center"><span class="tag" style="background:#f1f5f9;color:#64748b;font-weight:700">0 đôi</span></td>' +
+                '<td><span class="tag tag-XUAT" style="font-size:11px;font-weight:700">⏳ Chưa có tồn mũ (Chỉ có SLKH)</span></td>' +
+                '<td><div class="small" style="color:#0284c7">💡 Hàng chưa về xưởng — chờ kế hoạch sản xuất giao sang</div></td>' +
+                '<td style="text-align:center">' +
+                  '<button type="button" class="btn btn-ghost btn-sm" onclick="assignShelfForReconRow(' + origIdx + ')" style="padding:3px 8px;font-size:11px">⚡ Quy hoạch kệ trước</button>' +
+                '</td>' +
+              '</tr>';
+            }).join('') +
+          '</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>';
+}
+
+function filterPlanOnlyTable(query){
+  query = String(query || '').trim().toUpperCase();
+  const rows = $$('#kkPlanOnlyTable tbody tr');
+  rows.forEach(tr => {
+    const txt = tr.dataset.search || tr.textContent.toUpperCase();
+    tr.hidden = !!(query && !txt.includes(query));
+  });
+}
+
+function assignShelfForReconRow(idx){
+  if (!kkReconResult || !kkReconResult.rows[idx]) return;
+  const r = kkReconResult.rows[idx];
+  const curLoc = (r.fileKe ? r.fileKe + '-T' + (r.fileTang || 1) + '-O' + (r.fileO || 1) : (r.appKe ? r.appKe + '-T' + (r.appTang || 1) + '-O' + (r.appO || 1) : 'K01-T1-O1'));
+  const promptVal = prompt('Gán vị trí Kệ - Tầng - Ô cho mã: ' + r.ma + '\n(VD: K02-T1-O2 hoặc K14-T2-O3):', curLoc);
+  if (!promptVal) return;
+  const match = promptVal.trim().toUpperCase().match(/K?\s*(\d{1,2})[\s\-_/T]*(\d)?[\s\-_/O]*(\d)?/i);
+  if (!match) {
+    toast('Định dạng không hợp lệ! Hãy nhập dạng K01-T1-O2', 'err');
+    return;
+  }
+  const keNum = parseInt(match[1], 10);
+  if (keNum < 1 || keNum > SO_KE) {
+    toast('Kệ phải từ K01 đến K' + (SO_KE < 10 ? '0' : '') + SO_KE, 'err');
+    return;
+  }
+  const ke = 'K' + (keNum < 10 ? '0' : '') + keNum;
+  const tang = parseInt(match[2], 10) || 1;
+  const o = parseInt(match[3], 10) || 1;
+  r.fileKe = ke; r.fileTang = tang; r.fileO = o;
+  toast('Đã gán ' + r.ma + ' vào ' + ke + '-T' + tang + '-O' + o + ' (Bấm "Lưu chênh lệch & Đồng bộ" để lưu lên Sheet)', 'ok');
+  reconcileRun();
+}
+
+function applyReconRow(idx, silent){
+  if (!kkReconResult || !kkReconResult.rows[idx]) return 0;
+  const r = kkReconResult.rows[idx];
+  if (r.keOutOfRange) {
+    if (!silent) toast('Dòng ' + r.ma + ' có kệ ' + r.rawKe + ' vượt quá ' + SO_KE + ' kệ (K01-K' + (SO_KE < 10 ? '0' : '') + SO_KE + '), cần sửa kệ trước!', 'err');
+    return 0;
+  }
+  const defLocVal = ($('#kkReconDefaultLoc') && $('#kkReconDefaultLoc').value) || 'K01-T1-O1';
+  let ke = r.fileKe || (r.appLocs[0] && r.appLocs[0].ke);
+  let tang = r.fileTang || (r.appLocs[0] && r.appLocs[0].tang) || 1;
+  let o = r.fileO || (r.appLocs[0] && r.appLocs[0].o) || 1;
+
+  if (!ke && defLocVal !== 'NONE') {
+    const parts = defLocVal.split('-');
+    ke = parts[0] || 'K01';
+    tang = parseInt((parts[1] || '1').replace(/[^\d]/g, ''), 10) || 1;
+    o = parseInt((parts[2] || '1').replace(/[^\d]/g, ''), 10) || 1;
+  }
+
+  if (!ke) {
+    if (!silent) toast('Dòng ' + r.ma + ' chưa có vị trí Kệ trong file, hãy chọn "Ô kệ mặc định" ở trên để cân vào kho đệm!', 'err');
+    return 0;
+  }
+
+  if (!itemOf(r.ma)) {
+    K.items.push({ ma:r.ma, ten:r.ten || r.ma, model:r.model || '', mau:r.mau || '', size:r.size || '', dvt:'đôi' });
+  }
+  // Nếu chuyển kệ/ô khác, đưa các ô cũ về 0 trước khi gán tồn chuẩn vào ô mục tiêu
+  r.appLocs.forEach(old => {
+    if (old.ke !== ke || old.tang !== tang || (r.multiBins && r.multiBins.length ? !r.multiBins.includes(old.o) : old.o !== o)) {
+      enqueue({ loai:'KIEMKE', ke:old.ke, tang:old.tang, o:old.o, maVT:r.ma, soLuong:0, ghiChu:'Chuyển vị trí đối chiếu file sang ' + ke + '-T' + tang + '-O' + o });
+    }
+  });
+
+  if (r.multiBins && r.multiBins.length > 1) {
+    // Phân bổ đều tồn sang các ô (VD 1.2.3 -> chia đều cho Ô 1, Ô 2, Ô 3)
+    const n = r.multiBins.length;
+    const base = Math.floor(r.targetStock / n);
+    const rem = r.targetStock % n;
+    r.multiBins.forEach((binIdx, bI) => {
+      const q = base + (bI < rem ? 1 : 0);
+      enqueue({ loai:'KIEMKE', ke, tang, o:binIdx, maVT:r.ma, soLuong:q, ghiChu:'Cân đối MŨ BTP (' + (bI + 1) + '/' + n + ' ô ' + r.rawBin + (r.po ? ' · PO: ' + r.po : '') + ')' });
+    });
+  } else {
+    enqueue({ loai:'KIEMKE', ke, tang, o, maVT:r.ma, soLuong:r.targetStock, ghiChu:'Cân đối theo file MŨ BTP' + (r.po ? ' · PO: ' + r.po : '') });
+  }
+  save(LS.data, K);
+  if (!silent) {
+    beep(true);
+    const locNote = r.multiBins && r.multiBins.length > 1 ? ke + '-T' + tang + '-(Ô ' + r.multiBins.join(',') + ')' : ke + '-T' + tang + '-O' + o;
+    toast('Đã cân tồn ' + r.ma + ' = ' + fmt(r.targetStock) + ' tại ' + locNote, 'ok');
+    reconcileRun();
+  }
+  return 1;
+}
+
+async function saveReconBatchToSheet(){
+  if (!kkReconResult || !kkReconResult.rows.length) return;
+  const rows = kkReconResult.rows;
+  const defLocVal = ($('#kkReconDefaultLoc') && $('#kkReconDefaultLoc').value) || 'K01-T1-O1';
+
+  // Lấy các dòng có tồn kho mục tiêu > 0 hoặc đang có tồn trên App bị lệch
+  const candidates = rows.filter(r => !r.keOutOfRange && (r.targetStock > 0 || r.appStock > 0 || r.isLocDiff));
+  if (!candidates.length) {
+    toast('Tất cả các dòng tồn kho đã khớp 100%!', 'ok');
+    return;
+  }
+
+  const ops = [];
+  let noShelfAssignedCount = 0;
+
+  candidates.forEach(r => {
+    let ke = r.fileKe || (r.appLocs[0] && r.appLocs[0].ke);
+    let tang = r.fileTang || (r.appLocs[0] && r.appLocs[0].tang) || 1;
+    let o = r.fileO || (r.appLocs[0] && r.appLocs[0].o) || 1;
+
+    if (!ke && defLocVal !== 'NONE') {
+      const parts = defLocVal.split('-');
+      ke = parts[0] || 'K01';
+      tang = parseInt((parts[1] || '1').replace(/[^\d]/g, ''), 10) || 1;
+      o = parseInt((parts[2] || '1').replace(/[^\d]/g, ''), 10) || 1;
+      noShelfAssignedCount++;
+    }
+
+    if (!ke) return; // Bỏ qua nếu chọn NONE và không có kệ
+
+    // Nếu chuyển vị trí, clear vị trí cũ
+    r.appLocs.forEach(old => {
+      if (old.ke !== ke || old.tang !== tang || (r.multiBins && r.multiBins.length ? !r.multiBins.includes(old.o) : old.o !== o)) {
+        ops.push({
+          id: 'DC-CLR-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6),
+          loai: 'KIEMKE',
+          ke: old.ke,
+          tang: old.tang,
+          o: old.o,
+          maVT: r.ma,
+          tenVT: r.ten || r.ma,
+          soLuong: 0,
+          ghiChu: 'Chuyển vị trí sang ' + ke + '-T' + tang + '-O' + o
+        });
+      }
+    });
+
+    // Gán tồn mục tiêu
+    if (r.multiBins && r.multiBins.length > 1) {
+      const n = r.multiBins.length;
+      const base = Math.floor(r.targetStock / n);
+      const rem = r.targetStock % n;
+      r.multiBins.forEach((binIdx, bI) => {
+        const q = base + (bI < rem ? 1 : 0);
+        ops.push({
+          id: 'DC-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6) + '-' + bI,
+          loai: 'KIEMKE',
+          ke: ke,
+          tang: tang,
+          o: binIdx,
+          maVT: r.ma,
+          tenVT: r.ten || r.ma,
+          soLuong: q,
+          ghiChu: 'Cân tồn MŨ BTP (' + (bI + 1) + '/' + n + ' ô ' + r.rawBin + (r.po ? ' · PO: ' + r.po : '') + ')'
+        });
+      });
+    } else {
+      ops.push({
+        id: 'DC-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6),
+        loai: 'KIEMKE',
+        ke: ke,
+        tang: tang,
+        o: o,
+        maVT: r.ma,
+        tenVT: r.ten || r.ma,
+        soLuong: r.targetStock,
+        ghiChu: 'Cân đối theo file MŨ BTP' + (r.po ? ' · PO: ' + r.po : '')
+      });
+    }
+  });
+
+  if (!ops.length) {
+    toast('Không có dòng nào cần lưu.', 'err');
+    return;
+  }
+
+  let confirmMsg = 'Chuẩn bị đồng bộ ' + ops.length + ' thao tác (thuộc ' + candidates.length + ' mã mũ) lên Google Sheet.\n';
+  if (noShelfAssignedCount > 0) {
+    confirmMsg += '• Có ' + noShelfAssignedCount + ' dòng chưa ghi kệ được quy hoạch tạm vào Ô ' + defLocVal + '.\n';
+  }
+  confirmMsg += 'Sau khi đồng bộ, Google Sheet và App sẽ khớp 100% với File đối chiếu. Bạn có chắc chắn muốn lưu?';
+
+  if (!confirm(confirmMsg)) return;
+
+  // Mở modal tiến trình
+  showReconProgress(true, 'Đang đồng bộ dữ liệu lên Google Sheet...', 0, ops.length);
+
+  const batchSize = 35;
+  const batches = [];
+  for (let i = 0; i < ops.length; i += batchSize) {
+    batches.push(ops.slice(i, i + batchSize));
+  }
+
+  let doneCount = 0;
+  try {
+    for (let bi = 0; bi < batches.length; bi++) {
+      const chunk = batches[bi];
+      const stepText = 'Đợt ' + (bi + 1) + ' / ' + batches.length + ' (' + doneCount + ' / ' + ops.length + ' thao tác)';
+      showReconProgress(true, 'Đang gửi dữ liệu lên Google Sheet...', doneCount, ops.length, stepText);
+
+      // Gửi đợt này lên Google Apps Script
+      if (API) {
+        let sent = false;
+        for (let retry = 1; retry <= 3; retry++) {
+          try {
+            await post('BATCH_SYNC', { ops: chunk, user: SESS ? SESS.user.ma : 'kho' });
+            sent = true;
+            break;
+          } catch (err) {
+            if (retry === 3) throw err;
+            await new Promise(res => setTimeout(res, 1200 * retry));
+          }
+        }
+      } else {
+        localSync(chunk);
+      }
+
+      doneCount += chunk.length;
+      showReconProgress(true, 'Đã lưu xong đợt ' + (bi + 1) + ' / ' + batches.length, doneCount, ops.length);
+      await new Promise(res => setTimeout(res, 250));
+    }
+
+    showReconProgress(true, 'Đang tải lại dữ liệu mới nhất từ Google Sheet...', ops.length, ops.length, 'Hoàn tất ghi Sheet!');
+    if (API) {
+      K = await post('getData');
+      save(LS.data, K);
+    }
+    await new Promise(res => setTimeout(res, 400));
+    showReconProgress(false);
+    beep(true);
+    toast('✔ ĐÃ ĐỒNG BỘ THÀNH CÔNG 100% (' + doneCount + ' thao tác) LÊN GOOGLE SHEET!', 'ok');
+    reconcileRun();
+  } catch (err) {
+    showReconProgress(false);
+    toast('Lỗi đồng bộ: ' + (err.message || err), 'err');
+    beep(false);
+  }
+}
+
+if ($('#kkReconMixedFile')) $('#kkReconMixedFile').onchange = function(){ handleReconUpload(this, 'mixed'); };
+if ($('#kkReconInFile')) $('#kkReconInFile').onchange = function(){ handleReconUpload(this, 'in'); };
+if ($('#kkReconOutFile')) $('#kkReconOutFile').onchange = function(){ handleReconUpload(this, 'out'); };
+if ($('#kkReconDefaultLoc')) $('#kkReconDefaultLoc').onchange = function(){
+  if (kkReconResult) reconcileRun();
+};
+if ($('#kkReconSheetSel')) $('#kkReconSheetSel').onchange = function(){
+  if (kkRawUploads.mixed.length || kkRawUploads.in.length || kkRawUploads.out.length) {
+    rebuildReconFromCache();
+    reconcileRun();
+  }
+};
+if ($('#kkReconKeyMode')) $('#kkReconKeyMode').onchange = function(){
+  if (kkReconMixed.length || kkReconIn.length || kkReconOut.length) reconcileRun();
+};
+if ($('#kkReconRun')) $('#kkReconRun').onclick = reconcileRun;
+
+$$('#kkReconFilterTabs [data-rf]').forEach(b => b.onclick = () => {
+  kkReconFilter = b.dataset.rf;
+  $$('#kkReconFilterTabs [data-rf]').forEach(x => x.classList.toggle('on', x === b));
+  renderReconResult();
+});
+
+if ($('#kkReconSaveAdjust')) $('#kkReconSaveAdjust').onclick = () => {
+  saveReconBatchToSheet();
+};
+
+if ($('#kkReconClear')) $('#kkReconClear').onclick = () => {
+  kkReconMixed = []; kkReconIn = []; kkReconOut = []; kkReconResult = null; kkReconAudit = null;
+  kkRawUploads = { mixed:[], in:[], out:[] };
+  ['#kkReconMixedFile','#kkReconInFile','#kkReconOutFile'].forEach(s => { if ($(s)) $(s).value = ''; });
+  updateSheetSelectorOptions();
+  renderReconAnomalies();
+  $('#kkReconFilterTabs').hidden = true;
+  $('#kkReconTableWrap').hidden = true;
+  $('#kkReconSaveAdjust').hidden = true;
+  $('#kkReconClear').hidden = true;
+  $('#kkReconExport').disabled = true;
+  $('#kkReconSummary').innerHTML = '';
+  $('#kkReconFiles').textContent = 'Đã xoá bảng đối chiếu.';
+};
+
+if ($('#btnReconSample')) $('#btnReconSample').onclick = () => {
+  const sampleRows = [
+    ['MÃ MŨ', 'TÊN MŨ', 'PO', 'SO', 'MODEL', 'MÀU', 'SIZE', 'SLKH', 'KỆ', 'TẦNG', 'Ô', 'NHẬP', 'XUẤT', 'TỒN'],
+    ['MU-NK-DEN-41', 'Mũ Nike Air Đen', 'PO2601', 'SO8801', 'NK-AIR-26', 'Đen', '41', 250, 'K01', 1, 1, 200, 20, 180],
+    ['MU-NK-TRG-42', 'Mũ Nike Air Trắng', 'PO2602', 'SO8802', 'NK-AIR-26', 'Trắng', '42', 200, 'K01', 1, 2, 160, 10, 150],
+    ['MU-AD-XAM-40', 'Mũ Adidas Run Xám', 'PO2603', 'SO8803', 'AD-RUN-08', 'Xám', '40', 180, 'K04', 2, 1, 150, 0, 150],
+    ['MU-PM-DO-41',  'Mũ Puma Sport Đỏ', 'PO2604', 'SO8804', 'PM-SPT-05', 'Đỏ', '41', 300, 'K13', 1, 2, 220, 40, 180],
+    ['MU-NB-XANH-43','Mũ NewBalance Xanh', 'PO2605', 'SO8805', 'NB-574-26', 'Xanh', '43', 120, '', '', '', 0, 0, 0]
+  ];
+  kkReconMixed = parseReconRows(sampleRows, 'mixed', 'File_Kiem_Soat_Mau.xlsx').lines;
+  kkReconIn = []; kkReconOut = [];
+  updateReconStatusText('File_Kiem_Soat_Mau.xlsx (dữ liệu mẫu)');
+  reconcileRun();
+  toast('Đã nạp dữ liệu file mẫu & chạy đối chiếu 4 cột', 'ok');
+};
+
+if ($('#btnReconTemplate')) $('#btnReconTemplate').onclick = () => {
+  const csv = '\uFEFFMA_MU,TEN_MU,PO,SO,MODEL,MAU,SIZE,SLKH,KE,TANG,O,NHAP,XUAT,TON\n' +
+    'MU-NK-DEN-41,Mũ Nike Air Đen,PO2601,SO8801,NK-AIR-26,Đen,41,250,K01,1,1,200,20,180\n' +
+    'MU-NK-TRG-42,Mũ Nike Air Trắng,PO2602,SO8802,NK-AIR-26,Trắng,42,200,K01,1,2,130,0,130\n';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8' }));
+  a.download = 'Mau_Doi_Chieu_Nhap_Xuat_Ton_Kho_Mu.csv';
+  a.click();
+};
+
+if ($('#kkReconExport')) $('#kkReconExport').onclick = () => {
+  if (!kkReconResult || !kkReconResult.rows.length) return;
+  const head = ['MA_MU','TEN_MU','PO','SO','MODEL','MAU','SIZE','SLKH','KE_FILE','KE_APP','TANG','O','NHAP_FILE','NHAP_APP','LECH_NHAP','XUAT_FILE','XUAT_APP','LECH_XUAT','TON_FILE','TON_APP','LECH_TON','TRANG_THAI'];
+  const lines = [head.join(',')].concat(kkReconResult.rows.map(r => [
+    r.ma, '"' + String(r.ten || '').replace(/"/g, '""') + '"', r.po, r.so, r.model, r.mau, r.size, r.extPlan,
+    r.fileKe, '"' + r.appKe + '"', r.fileTang || r.appTang || '', r.fileO || r.appO || '',
+    r.extIn, r.appIn, r.inDiff, r.extOut, r.appOut, r.outDiff, r.targetStock, r.appStock, r.stockDiff,
+    '"' + r.status + '"'
+  ].join(',')));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF' + lines.join('\n')], { type:'text/csv;charset=utf-8' }));
+  a.download = 'Bao_Cao_Doi_Chieu_Kho_Mu_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+};
+
+/* =====================================================================
    SƠ ĐỒ 24 KỆ × 3 TẦNG × 4 Ô
    ===================================================================== */
 let mapFilter = 'all', mapSearchQ = '', mapSel = null, mapSelCell = null, mapBlink = null;
@@ -1544,8 +3133,9 @@ function cellQty(ke, t, o, rows){ return rows.filter(x => x.ke === ke && x.tang 
 
 function rackCardsHtml(rows, blink, compact, filterRange){
   const maxCell = Math.max(1, ...rows.map(r => cellQty(r.ke, r.tang, r.o, rows)));
-  const start = filterRange === 'B' ? 13 : 1;
-  const end = filterRange === 'A' ? 12 : SO_KE;
+  const half = Math.ceil(SO_KE / 2); // 13
+  const start = filterRange === 'B' ? half + 1 : 1;
+  const end = filterRange === 'A' ? half : SO_KE;
   let h = '';
   for (let i = start; i <= end; i++) {
     const ke = keCode(i), st = rackStats(ke, rows);
@@ -1588,7 +3178,8 @@ function bigGridHtml(ke, rows, blink, picked){
 }
 
 function zoneBlockHtml(zoneKey, title, badgeCls, rows, blink){
-  const start = zoneKey === 'A' ? 1 : 13, end = zoneKey === 'A' ? 12 : 24;
+  const half = Math.ceil(SO_KE / 2); // 13
+  const start = zoneKey === 'A' ? 1 : half + 1, end = zoneKey === 'A' ? half : SO_KE;
   let usedRacks = 0, qtySum = 0;
   for (let i = start; i <= end; i++) {
     const st = rackStats(keCode(i), rows);
@@ -1597,11 +3188,12 @@ function zoneBlockHtml(zoneKey, title, badgeCls, rows, blink){
   }
   const cards = rackCardsHtml(rows, blink, false, zoneKey);
   if (!cards) return '';
+  const totalInZone = end - start + 1;
   return '<div class="zone-box"><div class="zone-head">' +
     '<div class="zone-id"><div class="zone-badge ' + badgeCls + '">' + zoneKey + '</div>' +
       '<div><b>' + title + '</b><div class="xs muted">Kệ ' + keCode(start) + '–' + keCode(end) + ' · 3 tầng × 4 ô</div></div>' +
     '</div>' +
-    '<div class="zone-stats"><div><span>Có hàng</span><b>' + usedRacks + '/12 kệ</b></div><div><span>Tổng tồn</span><b class="num-tab">' + fmt(qtySum) + ' đôi</b></div></div>' +
+    '<div class="zone-stats"><div><span>Có hàng</span><b>' + usedRacks + '/' + totalInZone + ' kệ</b></div><div><span>Tổng tồn</span><b class="num-tab">' + fmt(qtySum) + ' đôi</b></div></div>' +
   '</div><div class="racks-grid">' + cards + '</div></div>';
 }
 
@@ -1783,6 +3375,8 @@ let findT = null;
 $('#findInp').addEventListener('input', () => { clearTimeout(findT); findT = setTimeout(renderFind, 120); });
 if ($('#btnFindClear')) $('#btnFindClear').onclick = () => { $('#findInp').value = ''; renderFind(); $('#findInp').focus(); };
 $('#btnFindScan').onclick = () => {
+  camHandler = txt => { beep(true); $('#findInp').value = parseItem(txt); renderFind(); };
+  if (!isGithubCamHost()) { openGithubCameraBridge(); return; }
   const box = $('#findCam');
   if (cam) { camStop(); box.hidden = true; return; }
   box.hidden = false; box.innerHTML = '<div id="findCamBox" style="border-radius:14px;overflow:hidden"></div>';
@@ -1937,6 +3531,7 @@ async function runDoctor(){
 
 function renderSettings(){
   $('#setApi').value = API;
+  if ($('#setGhUrl')) $('#setGhUrl').value = GH_URL;
   $('#setSound').checked = soundOn; $('#setAutoCam').checked = autoCam;
   $('#whoami').textContent = SESS ? 'Đăng nhập: ' + SESS.user.ten + ' (' + SESS.user.ma + ' · ' + SESS.user.vaiTro + ')' : 'Chưa đăng nhập';
   $('#btnLogout').hidden = !SESS;
@@ -1949,21 +3544,85 @@ function renderSettings(){
 $('#btnRunDoctor').onclick = runDoctor;
 $('#setSound').onchange = e => { soundOn = e.target.checked; save(LS.sound, soundOn); beep(true); };
 $('#setAutoCam').onchange = e => { autoCam = e.target.checked; save(LS.cam, autoCam); };
+if ($('#btnCamBridge')) $('#btnCamBridge').onclick = openGithubCameraBridge;
+if ($('#btnOpenGhCam')) $('#btnOpenGhCam').onclick = () => {
+  if ($('#setGhUrl') && $('#setGhUrl').value.trim()) {
+    GH_URL = $('#setGhUrl').value.trim();
+    localStorage.setItem('km.gh', GH_URL);
+  }
+  openGithubCameraBridge();
+};
 
 $('#btnSaveApi').onclick = () => {
   const v = $('#setApi').value.trim();
   if (v && !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(v)) { toast('Link phải dạng https://script.google.com/macros/s/…/exec', 'err'); return; }
+  if ($('#setGhUrl')) {
+    GH_URL = $('#setGhUrl').value.trim() || DEFAULT_GH_URL;
+    localStorage.setItem('km.gh', GH_URL);
+  }
   if (v !== API) { API = v; localStorage.setItem(LS.api, API); SESS = null; save(LS.sess, null); K = { shelves:[], items:[], stock:[], logs:[] }; save(LS.data, K); }
-  toast('Đã lưu kết nối', 'ok'); go('login');
+  toast('Đã lưu cấu hình kết nối', 'ok'); go(SESS ? 'settings' : 'login');
 };
 $('#btnTestApi').onclick = async () => {
   const v = $('#setApi').value.trim();
   if (!v) { $('#apiMsg').textContent = 'Nhập link /exec trước khi kiểm tra.'; return; }
   $('#apiMsg').textContent = 'Đang kiểm tra kết nối…';
   try {
-    const r = await (await fetch(v)).json();
+    const r = await (await fetch(v + (v.includes('?') ? '&' : '?') + 'action=ping')).json();
     $('#apiMsg').textContent = r.ok ? 'Kết nối thành công: ' + r.app + ' (' + (r.shelves || 24) + ' kệ)' : 'Phản hồi lạ';
   } catch (e) { $('#apiMsg').textContent = 'Không kết nối được. Kiểm tra lại link và quyền truy cập "Bất kỳ ai".'; }
+};
+
+function cleanLocalData(){
+  const itemMap = {};
+  (K.items || []).forEach(it => {
+    const ma = String(it.ma || '').trim().toUpperCase();
+    if (ma && !itemMap[ma]) itemMap[ma] = { ma, ten: String(it.ten || ma).trim(), model: String(it.model || '').trim().toUpperCase(), mau: String(it.mau || '').trim(), size: String(it.size || '').trim(), dvt: String(it.dvt || 'đôi').trim() || 'đôi' };
+  });
+  const stkMap = {};
+  let merged = 0, dropped = 0, addedItems = 0;
+  stockRows().forEach(s => {
+    const p = parseLoc(s.ke + '-T' + s.tang + '-O' + s.o);
+    const ma = String(s.maVT || '').trim().toUpperCase();
+    const sl = Math.round(Number(s.soLuong) || 0);
+    if (!p || p.bad || !ma || sl <= 0) { dropped++; return; }
+    const k = skey(p.ke, p.tang, p.o, ma);
+    if (!stkMap[k]) stkMap[k] = { ke:p.ke, tang:p.tang, o:p.o, maVT:ma, soLuong:sl };
+    else { stkMap[k].soLuong += sl; merged++; }
+    if (!itemMap[ma]) { itemMap[ma] = { ma, ten:ma, model:'', mau:'', size:'', dvt:'đôi' }; addedItems++; }
+  });
+  K.items = Object.values(itemMap);
+  K.stock = Object.values(stkMap);
+  Q = []; save(LS.queue, Q); save(LS.data, K);
+  return 'Đã làm sạch & chuẩn hóa: ' + K.stock.length + ' ô tồn chuẩn (gộp ' + merged + ' dòng trùng, bỏ ' + dropped + ' dòng lỗi, tự thêm ' + addedItems + ' mã mũ).';
+}
+
+if ($('#btnCleanData')) $('#btnCleanData').onclick = async () => {
+  try {
+    if (API) {
+      const r = await post('cleanData');
+      K = r.kho; save(LS.data, K); toast(r.message, 'ok');
+    } else {
+      const msg = cleanLocalData();
+      toast(msg, 'ok');
+    }
+    refreshView(); runDoctor();
+  } catch (e) { toast(e.message, 'err'); }
+};
+
+if ($('#btnArchiveLogs')) $('#btnArchiveLogs').onclick = async () => {
+  try {
+    if (API) {
+      const r = await post('archiveLogs');
+      K = r.kho; save(LS.data, K); toast(r.message, 'ok');
+    } else {
+      const before = (K.logs || []).length;
+      K.logs = (K.logs || []).slice(0, 100);
+      save(LS.data, K);
+      toast('Đã gọn bộ nhớ nhật ký cục bộ (' + before + ' → ' + K.logs.length + ' dòng)', 'ok');
+    }
+    refreshView();
+  } catch (e) { toast(e.message, 'err'); }
 };
 
 function seedLocalDemoData(){
@@ -1994,7 +3653,7 @@ $('#btnSeedSample').onclick = async () => {
 };
 
 $('#btnClearSample').onclick = async () => {
-  if (!confirm('Xoá sạch toàn bộ tồn kho và nhật ký? (Giữ nguyên 24 kệ và tài khoản)')) return;
+  if (!confirm('Xoá sạch toàn bộ tồn kho và nhật ký? (Giữ nguyên 26 kệ và tài khoản)')) return;
   try {
     localStorage.setItem('km.cleared', '1');
     if (API) { const r = await post('clearSample'); K = r.kho; }
@@ -2091,7 +3750,14 @@ if (!API && !localStorage.getItem(LS.data) && !localStorage.getItem('km.cleared'
   if (!SESS) { SESS = { token:'demo', user:{ ma:'admin', ten:'Quản trị', vaiTro:'ADMIN' } }; save(LS.sess, SESS); }
 }
 refreshDatalist();
-go(SESS ? 'home' : 'login');
+if (location.search.includes('bridge=1')) {
+  if (!SESS) { SESS = { token:'demo', user:{ ma:'cam', ten:'Camera GitHub', vaiTro:'WORKER' } }; }
+  autoCam = true; camManualOff = false;
+  go('NHAP');
+  toast('Cầu nối Camera GitHub đã bật — quét mã để truyền về Apps Script', 'ok');
+} else {
+  go(SESS ? 'home' : 'login');
+}
 if (SESS) { flush(); pull(); }
 </script>
 </body>

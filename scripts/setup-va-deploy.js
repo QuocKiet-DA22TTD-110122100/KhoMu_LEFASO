@@ -16,6 +16,7 @@ const CODE_GS_PATH = path.join(GAS_DIR, 'Code.gs');
 const CLASP_JSON_PATH = path.join(GAS_DIR, '.clasp.json');
 const DOCS_INDEX_PATH = path.join(ROOT_DIR, 'docs', 'index.html');
 const ROOT_INDEX_PATH = path.join(ROOT_DIR, 'index.html');
+const GAS_INDEX_PATH = path.join(GAS_DIR, 'Index.html');
 
 function runCmd(cmd, cwd = ROOT_DIR) {
   return execSync(cmd, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -45,7 +46,8 @@ function checkAndSync() {
   console.log('[OK] Cu phap hop le: docs/index.html');
 
   fs.copyFileSync(DOCS_INDEX_PATH, ROOT_INDEX_PATH);
-  console.log('[OK] Da dong bo docs/index.html -> index.html');
+  fs.copyFileSync(DOCS_INDEX_PATH, GAS_INDEX_PATH);
+  console.log('[OK] Da dong bo docs/index.html -> index.html & apps-script/Index.html');
 }
 
 /**
@@ -76,7 +78,8 @@ function embedDefaultApi(execUrl) {
   const updated = html.replace(re, `const DEFAULT_API = '${execUrl}';`);
   fs.writeFileSync(DOCS_INDEX_PATH, updated, 'utf8');
   fs.copyFileSync(DOCS_INDEX_PATH, ROOT_INDEX_PATH);
-  console.log('[OK] Da gan DEFAULT_API vao docs/index.html va index.html: ' + execUrl);
+  fs.copyFileSync(DOCS_INDEX_PATH, GAS_INDEX_PATH);
+  console.log('[OK] Da gan DEFAULT_API vao docs/index.html, index.html va apps-script/Index.html: ' + execUrl);
 }
 
 /**
