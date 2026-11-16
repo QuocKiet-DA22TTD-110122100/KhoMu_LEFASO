@@ -550,7 +550,10 @@ section{animation:fadeUp .22s var(--ease)}
           <button type="button" class="pw-eye" id="btnTogglePw" aria-label="Hiện/ẩn mật khẩu"></button>
         </div>
         <button type="button" class="btn btn-pri btn-full btn-huge" id="btnLogin" style="margin-top:18px">Vào kho</button>
-        <button type="button" class="btn btn-ghost btn-full" id="btnLoginSet" style="margin-top:10px">Cài đặt kết nối Sheet</button>
+        <div class="row" style="margin-top:10px">
+          <button type="button" class="btn btn-ghost" id="btnLoginSet" style="flex:1">Cài đặt kết nối Sheet</button>
+          <button type="button" class="btn btn-ghost" id="btnLoginDemo" style="flex:1">Xem thử Offline</button>
+        </div>
       </div>
     </div>
   </section>
@@ -927,8 +930,9 @@ function mountStaticIcons(){
   updateCamUi(false);
 }
 
-const DEFAULT_API = '';
-let API = localStorage.getItem(LS.api) || DEFAULT_API;
+const DEFAULT_API = 'https://script.google.com/macros/s/AKfycbxxPGIEsz5raJMYCQzdIrhNDO1Ecqz13vKPxc5yd0c0LSjlB1EpKG8KhGCpw0OEB91Pgg/exec';
+const savedApi = localStorage.getItem(LS.api);
+let API = savedApi !== null ? savedApi : DEFAULT_API;
 let SESS = load(LS.sess, null);
 let K = load(LS.data, { shelves:[], items:[], stock:[], logs:[] });
 let Q = load(LS.queue, []);
@@ -989,7 +993,10 @@ function toast(msg, kind){
 /* ---------------------- Giao tiếp Server & Hàng đợi Offline ---------------------- */
 async function post(action, payload){
   const res = await fetch(API, { method:'POST', body: JSON.stringify(Object.assign({ action, token: SESS && SESS.token }, payload || {})) });
-  const j = await res.json();
+  const txt = await res.text();
+  let j;
+  try { j = JSON.parse(txt); }
+  catch (e) { throw new Error('Apps Script cần cấp quyền lần đầu: mở Apps Script → chọn hàm setup → bấm Chạy → Cho phép'); }
   if (!j.ok) throw new Error(j.error || 'Lỗi máy chủ');
   return j.data;
 }
@@ -2047,6 +2054,12 @@ $('#btnTogglePw').onclick = () => {
   $('#btnTogglePw').innerHTML = icon(show ? 'eye-off' : 'eye');
 };
 $('#btnLoginSet').onclick = () => go('settings');
+if ($('#btnLoginDemo')) $('#btnLoginDemo').onclick = () => {
+  API = ''; localStorage.setItem(LS.api, '');
+  seedLocalDemoData();
+  SESS = { token:'demo', user:{ ma:'admin', ten:'Quản trị', vaiTro:'ADMIN' } };
+  save(LS.sess, SESS); go('home');
+};
 $('#lgMk').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnLogin').click(); });
 $('#btnLogin').onclick = async () => {
   const ma = $('#lgMa').value.trim(), mk = $('#lgMk').value;

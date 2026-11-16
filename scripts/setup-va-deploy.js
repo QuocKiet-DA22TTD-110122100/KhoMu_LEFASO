@@ -94,6 +94,22 @@ function findExistingDeploymentId() {
   }
 }
 
+const WEBAPP_MANIFEST = {
+  timeZone: 'Asia/Ho_Chi_Minh',
+  dependencies: {},
+  exceptionLogging: 'STACKDRIVER',
+  runtimeVersion: 'V8',
+  webapp: {
+    executeAs: 'USER_DEPLOYING',
+    access: 'ANYONE_ANONYMOUS'
+  }
+};
+
+function ensureWebappManifest() {
+  const manifestPath = path.join(GAS_DIR, 'appsscript.json');
+  fs.writeFileSync(manifestPath, JSON.stringify(WEBAPP_MANIFEST, null, 2) + '\n', 'utf8');
+}
+
 /**
  * Tao Google Sheet + Apps Script (neu chua co .clasp.json), push Code.gs va deploy Web App.
  */
@@ -104,6 +120,7 @@ function deployGas() {
     console.log(createOut.trim());
   }
 
+  ensureWebappManifest();
   const claspCfg = JSON.parse(fs.readFileSync(CLASP_JSON_PATH, 'utf8'));
   console.log('[GAS] Dang day Code.gs & appsscript.json len Apps Script...');
   console.log(runCmd('clasp push -f', GAS_DIR).trim());
@@ -169,6 +186,7 @@ function main() {
   const args = process.argv.slice(2);
   const scriptId = getArgValue(args, '--script-id');
   const parentId = getArgValue(args, '--sheet-id');
+  const setApiUrl = getArgValue(args, '--set-api');
   const repoUrl = getArgValue(args, '--repo');
   const runAll = args.includes('--all');
   const doCheck = args.includes('--check') || runAll || args.includes('--gas');
@@ -176,11 +194,12 @@ function main() {
   const doGit = args.includes('--git') || runAll;
 
   if (scriptId) writeClaspConfig(scriptId, parentId);
+  if (setApiUrl) embedDefaultApi(setApiUrl);
   if (doCheck) checkAndSync();
   if (doGas) deployGas();
   if (doGit) deployGit(repoUrl);
-  if (!scriptId && !doCheck && !doGas && !doGit) {
-    console.log('Cach dung: node scripts/setup-va-deploy.js [--check] [--script-id <ID>] [--gas] [--repo <URL>] [--git] [--all]');
+  if (!scriptId && !setApiUrl && !doCheck && !doGas && !doGit) {
+    console.log('Cach dung: node scripts/setup-va-deploy.js [--check] [--script-id <ID>] [--set-api <URL>] [--gas] [--repo <URL>] [--git] [--all]');
   }
 }
 
