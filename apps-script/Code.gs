@@ -678,7 +678,14 @@ function applyOps_(ops, user) {
         next = sl; delta = sl - cur;
         note = 'Hệ thống: ' + cur + ' → Thực tế: ' + sl + (note ? ' · ' + note : '');
         if (!itemCodes[ma] && sl > 0) {
-          newItems.push({ ma: ma, ten: op.tenVT || ma, dvt: 'đôi' });
+          newItems.push({
+            ma: ma,
+            ten: op.tenVT || op.ten || ma,
+            model: op.khuon || op.model || '',
+            mau: op.he || op.mau || '',
+            dvt: op.dvt || 'đôi',
+            ghiChu: (op.po ? 'PO: ' + op.po : '') + (op.so ? ' · SO: ' + op.so : '') + (op.ghiChu ? ' · ' + op.ghiChu : '')
+          });
           itemCodes[ma] = true;
         }
       } else {

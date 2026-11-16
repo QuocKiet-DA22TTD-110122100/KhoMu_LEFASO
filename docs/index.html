@@ -2171,14 +2171,18 @@ function parseReconRows(rows, direction, fileName){
       mathMismatchRows.push({ row: r + 1, maGiay: rawMa, po: rawPo, inQty, outQty, tonFile });
     }
 
+    const rawHe = cell('he') || cell('mau');
+    const rawKhuon = cell('khuon') || cell('model');
     lines.push({
       maGiay: rawMa,
       maVT: rawMa,
       ten: cell('tenVT') || rawMa,
       po: (rawPo && rawPo !== '0') ? rawPo : '',
       so: (rawSo && rawSo !== '0') ? rawSo : '',
-      model: cell('model').toUpperCase(),
-      mau: cell('mau'),
+      he: rawHe,
+      khuon: rawKhuon,
+      model: rawKhuon,
+      mau: rawHe,
       size: cell('size'),
       ke: locParsed.outOfRange ? '' : locParsed.ke,
       rawKe: locParsed.ke,
@@ -2462,67 +2466,75 @@ function reconcileRun(){
   }
   const fromDate = ($('#kkReconFrom') && $('#kkReconFrom').value) || '';
   const toDate = ($('#kkReconTo') && $('#kkReconTo').value) || '';
-  const keyMode = ($('#kkReconKeyMode') && $('#kkReconKeyMode').value) || 'PO';
 
-  const byMa = {};
-  const maGiayToGroups = {};
-  const ensureGroup = (key, maGiay, tenDefault) => {
-    if (!byMa[key]) {
-      const it = itemOf(key) || itemOf(maGiay) || {};
-      byMa[key] = {
-        ma: key,
-        maGiay: maGiay || key,
-        ten: it.ten || tenDefault || maGiay || key,
-        po:'', so:'', model: it.model || '', mau: it.mau || '', size: it.size || '',
-        fileKe:'', rawKe:'', keOutOfRange:false, fileTang:0, fileO:0, rawBin:'', multiBin:false, multiBins:[],
-        extPlan:0, hasExtPlan:false, extIn:0, extOut:0, extStock:0, hasExtStock:false,
-        appIn:0, appOut:0, appStock:0, appLocs:[]
+  const groups = {};
+  const ensureGroup = (l) => {
+    // Nhóm theo PO + Mã Giày (mỗi PO là 1 đơn hàng kiểm kê chuẩn của file)
+    const mg = l.maGiay || l.maVT || '';
+    const po = l.po || '';
+    const key = po ? (po + (mg ? '|' + mg : '')) : mg;
+    if (!groups[key]) {
+      const it = itemOf(mg) || itemOf(po) || {};
+      groups[key] = {
+        key,
+        ma: mg || po, // MÃ GIÀY / MÃ MŨ THỰC TẾ
+        po: po,       // MÃ PO
+        so: l.so || '',
+        he: l.he || it.mau || '',
+        khuon: l.khuon || it.model || '',
+        model: l.khuon || it.model || '',
+        mau: l.he || it.mau || '',
+        ten: it.ten || mg || po,
+        fileKe: '', rawKe: '', keOutOfRange: false, fileTang: 0, fileO: 0, rawBin: '', isMultiBin: false, bins: [], multiBins: [],
+        extPlan: 0, hasExtPlan: false, extIn: 0, extOut: 0, targetStock: 0, hasExtStock: false,
+        appIn: 0, appOut: 0, appStock: 0, appLocs: []
       };
-      if (maGiay) {
-        if (!maGiayToGroups[maGiay]) maGiayToGroups[maGiay] = [];
-        maGiayToGroups[maGiay].push(byMa[key]);
-      }
     }
-    return byMa[key];
+    return groups[key];
   };
 
   allLines.forEach(l => {
-    const mg = l.maGiay || l.maVT;
-    const key = (keyMode === 'PO' && l.po) ? l.po : mg;
-    const g = ensureGroup(key, mg, (keyMode === 'PO' && l.po) ? mg : (l.ten || mg));
-    if (l.ten && l.ten !== l.maVT && keyMode !== 'PO') g.ten = l.ten;
-    else if (keyMode === 'PO') g.ten = mg;
-    if (l.po) g.po = g.po && g.po !== l.po ? (g.po.split(', ').length < 3 ? g.po + ', ' + l.po : g.po) : l.po;
-    if (l.so) g.so = l.so;
-    if (l.model) g.model = l.model;
-    if (l.mau) g.mau = l.mau;
-    if (l.size) g.size = l.size;
+    const g = ensureGroup(l);
+    if (l.so && !g.so) g.so = l.so;
+    if (l.he && !g.he) { g.he = l.he; g.mau = l.he; }
+    if (l.khuon && !g.khuon) { g.khuon = l.khuon; g.model = l.khuon; }
     if (l.rawKe) { g.rawKe = l.rawKe; g.keOutOfRange = g.keOutOfRange || !!l.keOutOfRange; }
-    if (l.ke) { g.fileKe = l.ke; g.fileTang = l.tang || g.fileTang; g.fileO = l.o || g.fileO; }
-    if (l.rawBin) { g.rawBin = l.rawBin; g.multiBin = g.multiBin || !!l.multiBin; g.multiBins = l.multiBins || g.multiBins; }
+    if (l.ke && !g.fileKe) g.fileKe = l.ke;
+    if (l.tang && !g.fileTang) g.fileTang = l.tang;
+    if (l.o && !g.fileO) g.fileO = l.o;
+    if (l.isMultiBin) { g.isMultiBin = true; g.bins = l.bins; g.rawBin = l.rawBin; }
     if (l.hasSlkh) { g.extPlan += l.slkh; g.hasExtPlan = true; }
     g.extIn += l.inQty || 0;
     g.extOut += l.outQty || 0;
-    if (l.hasTon) { g.extStock += l.tonFile; g.hasExtStock = true; }
+    if (l.hasTon) { g.targetStock += l.tonFile; g.hasExtStock = true; }
   });
 
-  // Cộng tồn thực tế trên App cho các mã có trong file đối chiếu (hỗ trợ khớp theo PO hoặc theo Mã giày)
+  // Đối chiếu tồn kho thực tế từ App: Khớp theo Mã Giày + PO (nếu có trong ghi chú)
   stockRows().forEach(r => {
-    const gDirect = byMa[r.maVT];
-    const gFallback = !gDirect && keyMode === 'PO' && maGiayToGroups[r.maVT] && maGiayToGroups[r.maVT].length === 1 ? maGiayToGroups[r.maVT][0] : null;
-    const g = gDirect || gFallback;
-    if (!g) return;
-    g.appStock += r.soLuong;
-    g.appLocs.push({ ke:r.ke, tang:r.tang, o:r.o, soLuong:r.soLuong });
+    const maUpper = String(r.maVT || '').trim().toUpperCase();
+    // Tìm nhóm khớp theo Mã Giày
+    const matchedGroups = Object.values(groups).filter(g => g.ma === maUpper || g.po === maUpper);
+    if (!matchedGroups.length) return;
+
+    if (matchedGroups.length === 1) {
+      matchedGroups[0].appStock += r.soLuong;
+      matchedGroups[0].appLocs.push({ ke: r.ke, tang: r.tang, o: r.o, soLuong: r.soLuong });
+    } else {
+      // Nếu có nhiều PO của cùng mã giày, ưu tiên khớp theo PO nếu ô trùng kệ hoặc phân bổ
+      const withRack = matchedGroups.find(g => g.fileKe === r.ke) || matchedGroups[0];
+      withRack.appStock += r.soLuong;
+      withRack.appLocs.push({ ke: r.ke, tang: r.tang, o: r.o, soLuong: r.soLuong });
+    }
   });
 
-  // Cộng giao dịch Nhập / Xuất trên App (lọc theo Từ ngày - Đến ngày nếu có)
+  // Đối chiếu lịch sử Nhập / Xuất từ App
   getAllLogs().forEach(lg => {
     if (!lg.maVT) return;
-    const gDirect = byMa[lg.maVT];
-    const gFallback = !gDirect && keyMode === 'PO' && maGiayToGroups[lg.maVT] && maGiayToGroups[lg.maVT].length === 1 ? maGiayToGroups[lg.maVT][0] : null;
-    const g = gDirect || gFallback;
-    if (!g) return;
+    const maUpper = String(lg.maVT || '').trim().toUpperCase();
+    const noteUpper = String(lg.ghiChu || '').toUpperCase();
+    const matched = Object.values(groups).filter(g => g.ma === maUpper || (g.po && noteUpper.includes(g.po)));
+    if (!matched.length) return;
+    const g = matched[0];
     if (fromDate || toDate) {
       const d = parseLogIsoDate(lg.thoiGian);
       if (d && ((fromDate && d < fromDate) || (toDate && d > toDate))) return;
@@ -2532,47 +2544,49 @@ function reconcileRun(){
     else if (lg.loai === 'XUAT') g.appOut += Math.abs(sl);
   });
 
-  const rows = Object.values(byMa).map(g => {
+  const rows = Object.values(groups).map(g => {
     g.appLocs.sort((a, b) => b.soLuong - a.soLuong);
     const topApp = g.appLocs[0] || { ke:'', tang:0, o:0 };
     const appKe = Array.from(new Set(g.appLocs.map(x => x.ke))).join(', ');
     const appTang = topApp.tang || 0;
     const appO = topApp.o || 0;
 
-    const targetStock = g.hasExtStock ? g.extStock : Math.max(0, g.extIn - g.extOut);
     const inDiff = g.appIn - g.extIn;
     const outDiff = g.appOut - g.extOut;
-    const stockDiff = g.appStock - targetStock;
+    const stockDiff = g.appStock - g.targetStock;
 
-    const isPlanOnly = g.hasExtPlan && targetStock === 0 && g.appStock === 0 && g.extIn === 0;
-    const isDoneOrder = (g.extIn > 0 && g.extOut >= g.extIn && targetStock === 0 && g.appStock === 0);
-    const isNoShelf = (targetStock > 0 || g.appStock > 0) && !g.fileKe && !appKe;
+    const isPlanOnly = (g.extPlan > 0 && g.targetStock === 0 && g.appStock === 0 && g.extIn === 0);
+    const isDoneOrder = (g.extIn > 0 && g.extOut >= g.extIn && g.targetStock === 0 && g.appStock === 0);
+    const isNoShelf = (g.targetStock > 0 || g.appStock > 0) && !g.fileKe && !appKe;
     const isLocDiff = !!(g.keOutOfRange || (g.fileKe && appKe && !g.appLocs.some(l => l.ke === g.fileKe && (!g.fileTang || l.tang === g.fileTang) && (!g.fileO || l.o === g.fileO))));
     const isQtyDiff = g.hasExtStock ? (stockDiff !== 0) : ((g.extIn > 0 && inDiff !== 0) || (g.extOut > 0 && outDiff !== 0));
-    
-    // Đồng bộ chuẩn lên Sheet
-    const isStockMatched = targetStock === g.appStock;
-    const isFullySyncedOnSheet = (isStockMatched && !isLocDiff && (!isNoShelf || g.appStock > 0)) || (isDoneOrder && !isQtyDiff);
-    const ok = isFullySyncedOnSheet;
 
-    let status = 'Khớp hoàn toàn';
+    // CHỈ coi là ĐÃ ĐỒNG BỘ LÊN SHEET khi có hàng tồn thực tế và App đã lưu đúng số tồn + vị trí!
+    // Các dòng SLKH (chưa về xưởng) hoặc Đã xuất hết không được tính là "Đã lưu tồn Sheet" để tránh báo ảo 100%.
+    const isStockMatched = (g.targetStock > 0 && g.appStock === g.targetStock);
+    const isFullySyncedOnSheet = isStockMatched && !isLocDiff && (!isNoShelf || g.appStock > 0);
+    const ok = isFullySyncedOnSheet || (isDoneOrder && !isQtyDiff);
+
+    let status = '⏳ Chưa lưu Sheet';
     if (g.keOutOfRange) status = 'Kệ ' + g.rawKe + ' vượt K' + SO_KE;
-    else if (isPlanOnly) status = 'Chỉ có SLKH (chưa nhập)';
-    else if (isDoneOrder) status = 'Đã xuất hết (tồn 0)';
-    else if (isNoShelf && g.appStock === targetStock && targetStock > 0) status = '✔ Đã lưu Sheet · ⚠️ Chờ xếp kệ';
+    else if (isPlanOnly) status = '📋 Chưa về xưởng (Chỉ có SLKH)';
+    else if (isDoneOrder) status = '✔ Đã xuất hết (Tồn 0)';
+    else if (isFullySyncedOnSheet) status = '✔ Đã lưu Sheet (100%)';
+    else if (isNoShelf && g.appStock === g.targetStock && g.appStock > 0) status = '✔ Đã lưu Sheet · ⚠️ Chờ xếp kệ';
     else if (isNoShelf) status = '⚠️ Tồn chưa xếp kệ';
-    else if (stockDiff !== 0 && isLocDiff) status = 'Lệch tồn & vị trí';
-    else if (stockDiff !== 0) status = (stockDiff > 0 ? 'Thừa tồn +' : 'Thiếu tồn ') + fmt(stockDiff);
+    else if (g.appStock !== g.targetStock && isLocDiff) status = 'Lệch tồn & vị trí';
+    else if (g.appStock !== g.targetStock) status = (stockDiff > 0 ? 'Thừa tồn +' : 'Thiếu tồn ') + fmt(stockDiff);
     else if (isLocDiff) status = 'Lệch Kệ / Tầng / Ô';
     else if (isQtyDiff) status = 'Lệch Nhập / Xuất';
 
     return Object.assign(g, {
-      appKe, appTang, appO, targetStock,
+      appKe, appTang, appO,
       inDiff, outDiff, stockDiff,
       isPlanOnly, isDoneOrder, isNoShelf, isLocDiff, isQtyDiff, isFullySyncedOnSheet, ok, status
     });
   }).sort((a, b) => {
-    const score = x => (x.keOutOfRange ? 6 : 0) + (x.isNoShelf && !x.isFullySyncedOnSheet ? 5 : 0) + (x.targetStock > 0 && !x.ok ? 4 : 0) + (x.targetStock > 0 ? 3 : 0) + (!x.ok ? 1 : 0);
+    // Ưu tiên dòng có tồn kho đưa lên đầu để thủ kho theo dõi
+    const score = x => (x.keOutOfRange ? 7 : 0) + (x.isNoShelf && !x.isFullySyncedOnSheet ? 6 : 0) + (x.targetStock > 0 && !x.isFullySyncedOnSheet ? 5 : 0) + (x.targetStock > 0 ? 4 : 0) + (!x.ok ? 2 : 0);
     const d = score(b) - score(a);
     return d !== 0 ? d : a.ma.localeCompare(b.ma);
   });
@@ -2595,10 +2609,10 @@ function renderReconResult(){
   const diffN = rows.filter(x => x.isQtyDiff).length;
   const okN = rows.filter(x => x.ok).length;
 
-  // Lọc chỉ những dòng có phát sinh tồn kho thực tế
+  // Lọc chỉ những dòng có phát sinh tồn kho thực tế trong kho (Target Stock > 0)
   const stockRowsList = rows.filter(x => x.targetStock > 0);
   const totalStockRows = stockRowsList.length;
-  const syncedStockRows = stockRowsList.filter(x => x.appStock === x.targetStock && !x.isLocDiff).length;
+  const syncedStockRows = stockRowsList.filter(x => x.isFullySyncedOnSheet || (x.appStock === x.targetStock && x.appStock > 0)).length;
 
   $('#cntFilterAll').textContent = fmt(rows.length);
   $('#cntFilterNoShelf').textContent = fmt(noShelfN);
@@ -2638,14 +2652,14 @@ function renderReconResult(){
   const isFull100 = (syncedStockRows === totalStockRows && totalStockRows > 0);
   const statusBadge = isFull100
     ? '<span class="tag tag-ok" style="font-size:13px;font-weight:800;padding:6px 12px">✔ ĐÃ LƯU &amp; ĐỒNG BỘ 100% LÊN GOOGLE SHEET</span>'
-    : '<span class="tag tag-XUAT" style="font-size:13px;font-weight:700;padding:6px 12px">⏳ Tiến độ lưu Sheet: ' + fmt(syncedStockRows) + ' / ' + fmt(totalStockRows) + ' mã tồn (' + stockRowPct + '%)</span>';
+    : '<span class="tag tag-XUAT" style="font-size:13px;font-weight:700;padding:6px 12px">⏳ Đang chờ đồng bộ: ' + fmt(syncedStockRows) + ' / ' + fmt(totalStockRows) + ' mã tồn (' + stockRowPct + '%)</span>';
 
   $('#kkReconSummary').innerHTML =
     '<div style="margin-bottom:12px;padding:14px 16px;border-radius:14px;background:#f8fafc;border:1.5px solid var(--line)">' +
       '<div class="row wrap" style="justify-content:space-between;margin-bottom:8px;gap:8px">' +
         '<div>' +
           '<b style="font-size:14px;color:var(--ink)">TIẾN ĐỘ ĐỒNG BỘ TỒN MŨ THEO FILE LÊN GOOGLE SHEET</b>' +
-          '<div class="small muted" style="margin-top:2px">Hệ thống đối chiếu 4 cột: Kế hoạch (SLKH), Nhập, Xuất, Tồn mũ. Tách riêng 2,033 đơn hàng chỉ có kế hoạch ở bảng bên dưới.</div>' +
+          '<div class="small muted" style="margin-top:2px">Đối chiếu 4 cột: SLKH, Nhập, Xuất, Tồn Mũ. Chuẩn hóa Mã Giày, PO, SO, Hệ, Khuôn theo đúng cột của file.</div>' +
         '</div>' +
         '<div>' + statusBadge + '</div>' +
       '</div>' +
@@ -2662,7 +2676,7 @@ function renderReconResult(){
       '<div class="rk-card"><div class="rk-lbl">1. SLKH (File)</div><div class="rk-val">' + fmt(sum.plan) + '</div></div>' +
       '<div class="rk-card"><div class="rk-lbl">2. Nhập (File / App)</div><div class="rk-val">' + fmt(sum.fIn) + ' / ' + fmt(sum.aIn) + '</div></div>' +
       '<div class="rk-card"><div class="rk-lbl">3. Xuất (File / App)</div><div class="rk-val">' + fmt(sum.fOut) + ' / ' + fmt(sum.aOut) + '</div></div>' +
-      '<div class="rk-card"><div class="rk-lbl">4. Tồn mũ (File / App)</div><div class="rk-val">' + fmt(sum.fStk) + ' / ' + fmt(sum.aStk) + ' (' + stockSyncPct + '%)</div></div>' +
+      '<div class="rk-card"><div class="rk-lbl">4. Tồn mũ (File / App)</div><div class="rk-val" style="color:var(--brand)">' + fmt(sum.fStk) + ' / ' + fmt(sum.aStk) + ' (' + stockSyncPct + '%)</div></div>' +
       '<div class="rk-card"><div class="rk-lbl">5. Tồn chưa xếp kệ</div><div class="rk-val" style="color:var(--rose-700)">' + fmt(noShelfN) + ' dòng</div></div>' +
       '<div class="rk-card"><div class="rk-lbl">6. Chưa tồn (Chỉ SLKH)</div><div class="rk-val" style="color:var(--sky-700)">' + fmt(planOnlyN) + ' dòng</div></div>' +
     '</div>';
@@ -2673,34 +2687,34 @@ function renderReconResult(){
     if (kkReconFilter === 'locDiff') return x.isLocDiff;
     if (kkReconFilter === 'diff') return x.isQtyDiff;
     if (kkReconFilter === 'ok') return x.ok;
-    // Mặc định tab "Tất cả": Ưu tiên hiển thị các mã có phát sinh tồn kho thực tế hoặc có nhập xuất để bảng không bị ngập 2,033 mã kế hoạch
+    // Mặc định: Hiển thị các mã có phát sinh tồn kho thực tế hoặc có nhập xuất để dễ quản lý
     return x.targetStock > 0 || x.appStock > 0 || x.isLocDiff || (x.extIn > 0 && x.extOut > 0);
   });
 
   const displayRows = filtered.slice(0, 350);
   const moreNote = filtered.length > displayRows.length
-    ? '<tr><td colspan="19" class="muted" style="text-align:center;padding:12px;background:#f8fafc">Đang hiển thị <b>' + fmt(displayRows.length) + ' / ' + fmt(filtered.length) + '</b> dòng ưu tiên (các dòng có kệ &amp; có tồn mũ hiển thị lên đầu). Bấm <b>"Tải báo cáo Excel (.csv)"</b> để xuất toàn bộ ' + fmt(rows.length) + ' dòng.</td></tr>'
+    ? '<tr><td colspan="20" class="muted" style="text-align:center;padding:12px;background:#f8fafc">Đang hiển thị <b>' + fmt(displayRows.length) + ' / ' + fmt(filtered.length) + '</b> dòng ưu tiên (các dòng có tồn mũ hiển thị lên đầu). Bấm <b>"Tải báo cáo Excel (.csv)"</b> để xuất toàn bộ ' + fmt(rows.length) + ' dòng.</td></tr>'
     : '';
 
   $('#kkReconBody').innerHTML = (displayRows.map(x => {
     const idx = rows.indexOf(x);
-    const meta = [x.model, x.mau, x.size && 'Sz ' + x.size].filter(Boolean).join(' · ') || '—';
     const keHtml = x.keOutOfRange
       ? '<span class="tag tag-err mono" title="Kho Mũ chỉ có ' + SO_KE + ' kệ (K01-K' + (SO_KE < 10 ? '0' : '') + SO_KE + ')">' + esc(x.rawKe) + ' (>K' + SO_KE + ')</span>'
       : (x.fileKe && x.appKe
         ? (x.isLocDiff ? '<span class="d-neg">F:' + esc(x.fileKe) + '</span> / <span style="color:var(--sky-700);font-weight:700">A:' + esc(x.appKe) + '</span>' : '<span class="tag tag-NHAP mono">' + esc(x.fileKe) + '</span>')
-        : (x.fileKe ? '<span class="tag tag-KIEMKE mono">F:' + esc(x.fileKe) + '</span>' : (x.appKe ? '<span class="tag tag-NHAP mono">A:' + esc(x.appKe) + '</span>' : '<span class="d-neg">Chưa kệ</span>')));
+        : (x.fileKe ? '<span class="tag tag-KIEMKE mono">Kệ ' + esc(x.fileKe) + '</span>' : (x.appKe ? '<span class="tag tag-NHAP mono">A:' + esc(x.appKe) + '</span>' : '<span class="d-neg">Chưa có kệ</span>')));
     const tHtml = (x.fileTang || x.appTang) ? ('T' + (x.fileTang || x.appTang)) : '—';
-    const oHtml = x.multiBin
+    const oHtml = x.isMultiBin
       ? ('Ô ' + (x.fileO || x.appO || 1) + ' <span class="xs muted" title="File ghi nhiều ô: ' + esc(x.rawBin) + '">(' + esc(x.rawBin) + ')</span>')
       : ((x.fileO || x.appO) ? ('Ô ' + (x.fileO || x.appO)) : '—');
-    const stCls = x.ok ? 'tag-ok' : (x.keOutOfRange || x.isNoShelf || x.stockDiff !== 0 ? 'tag-err' : 'tag-XUAT');
+    const stCls = x.isFullySyncedOnSheet ? 'tag-ok' : (x.keOutOfRange || x.isNoShelf || x.stockDiff !== 0 ? 'tag-err' : 'tag-XUAT');
 
     return '<tr>' +
-      '<td><b class="mono">' + esc(x.ma) + '</b><div class="xs muted">' + esc(x.ten) + '</div></td>' +
-      '<td class="mono">' + esc(x.po || '—') + '</td>' +
+      '<td><b class="mono" style="font-size:13px">' + esc(x.ma) + '</b>' + (x.ten && x.ten !== x.ma ? '<div class="xs muted">' + esc(x.ten) + '</div>' : '') + '</td>' +
+      '<td>' + (x.po ? ('<b style="color:#0284c7;font-family:var(--font-mono)">' + esc(x.po) + '</b>') : '—') + '</td>' +
       '<td class="mono">' + esc(x.so || '—') + '</td>' +
-      '<td>' + esc(meta) + '</td>' +
+      '<td><span class="tag" style="background:#f1f5f9;font-size:11px">' + esc(x.he || '—') + '</span></td>' +
+      '<td class="mono small">' + esc(x.khuon || '—') + '</td>' +
       '<td class="num-tab" style="text-align:right;font-weight:700">' + (x.hasExtPlan ? fmt(x.extPlan) : '—') + '</td>' +
       '<td>' + keHtml + '</td>' +
       '<td class="mono" style="text-align:center">' + tHtml + '</td>' +
@@ -2723,7 +2737,7 @@ function renderReconResult(){
         '</div>' +
       '</td>' +
     '</tr>';
-  }).join('') + moreNote) || '<tr><td colspan="19" class="muted" style="text-align:center;padding:18px">Không có dòng nào thuộc bộ lọc này.</td></tr>';
+  }).join('') + moreNote) || '<tr><td colspan="20" class="muted" style="text-align:center;padding:18px">Không có dòng nào thuộc bộ lọc này.</td></tr>';
 
   $('#kkReconBody').querySelectorAll('[data-rfix]').forEach(b => b.onclick = () => applyReconRow(+b.dataset.rfix));
   $('#kkReconBody').querySelectorAll('[data-rass]').forEach(b => b.onclick = () => assignShelfForReconRow(+b.dataset.rass));
@@ -2770,8 +2784,10 @@ function renderKkPlanOnlySection(){
           '<thead>' +
             '<tr style="background:#e0f2fe;color:#0369a1">' +
               '<th>MÃ GIÀY / TÊN MŨ</th>' +
-              '<th>PO / SO</th>' +
-              '<th>MODEL / MÀU / SIZE</th>' +
+              '<th>PO</th>' +
+              '<th>SO</th>' +
+              '<th>HỆ</th>' +
+              '<th>KHUÔN</th>' +
               '<th style="text-align:right">SL KẾ HOẠCH (SLKH)</th>' +
               '<th style="text-align:center">TỒN MŨ THỰC TẾ</th>' +
               '<th>TRẠNG THÁI</th>' +
@@ -2782,11 +2798,12 @@ function renderKkPlanOnlySection(){
           '<tbody>' +
             planOnlyRows.map((r, pIdx) => {
               const origIdx = kkReconResult.rows.indexOf(r);
-              const meta = [r.model, r.mau, r.size && 'Sz ' + r.size].filter(Boolean).join(' · ') || '—';
-              return '<tr data-search="' + esc((r.ma + ' ' + (r.ten||'') + ' ' + (r.po||'') + ' ' + (r.so||'')).toUpperCase()) + '">' +
-                '<td><b>' + esc(r.ma) + '</b><div class="xs muted">' + esc(r.ten || r.ma) + '</div></td>' +
-                '<td>' + (r.po ? ('<b style="color:#0284c7">PO: ' + esc(r.po) + '</b>') : '—') + (r.so ? ('<div class="xs muted">SO: ' + esc(r.so) + '</div>') : '') + '</td>' +
-                '<td>' + esc(meta) + '</td>' +
+              return '<tr data-search="' + esc((r.ma + ' ' + (r.po||'') + ' ' + (r.so||'') + ' ' + (r.he||'') + ' ' + (r.khuon||'')).toUpperCase()) + '">' +
+                '<td><b>' + esc(r.ma) + '</b></td>' +
+                '<td>' + (r.po ? ('<b style="color:#0284c7;font-family:var(--font-mono)">' + esc(r.po) + '</b>') : '—') + '</td>' +
+                '<td class="mono">' + esc(r.so || '—') + '</td>' +
+                '<td><span class="tag" style="background:#f1f5f9;font-size:11px">' + esc(r.he || '—') + '</span></td>' +
+                '<td class="mono small">' + esc(r.khuon || '—') + '</td>' +
                 '<td style="text-align:right;font-weight:700;color:#0369a1">' + fmt(r.extPlan) + ' đôi</td>' +
                 '<td style="text-align:center"><span class="tag" style="background:#f1f5f9;color:#64748b;font-weight:700">0 đôi</span></td>' +
                 '<td><span class="tag tag-XUAT" style="font-size:11px;font-weight:700">⏳ Chưa có tồn mũ (Chỉ có SLKH)</span></td>' +
@@ -2938,12 +2955,13 @@ async function saveReconBatchToSheet(){
       }
     });
 
-    // Gán tồn mục tiêu
-    if (r.multiBins && r.multiBins.length > 1) {
-      const n = r.multiBins.length;
+    // Gán tồn mục tiêu (hỗ trợ chia đều cho các ô 1.2.3)
+    const binList = (r.bins && r.bins.length > 1) ? r.bins : ((r.multiBins && r.multiBins.length > 1) ? r.multiBins : null);
+    if (binList && binList.length > 1) {
+      const n = binList.length;
       const base = Math.floor(r.targetStock / n);
       const rem = r.targetStock % n;
-      r.multiBins.forEach((binIdx, bI) => {
+      binList.forEach((binIdx, bI) => {
         const q = base + (bI < rem ? 1 : 0);
         ops.push({
           id: 'DC-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6) + '-' + bI,
@@ -2953,8 +2971,12 @@ async function saveReconBatchToSheet(){
           o: binIdx,
           maVT: r.ma,
           tenVT: r.ten || r.ma,
+          po: r.po,
+          so: r.so,
+          he: r.he,
+          khuon: r.khuon,
           soLuong: q,
-          ghiChu: 'Cân tồn MŨ BTP (' + (bI + 1) + '/' + n + ' ô ' + r.rawBin + (r.po ? ' · PO: ' + r.po : '') + ')'
+          ghiChu: (r.po ? 'PO: ' + r.po : '') + (r.so ? ' · SO: ' + r.so : '') + (r.he ? ' · Hệ: ' + r.he : '') + (r.khuon ? ' · Khuôn: ' + r.khuon : '') + ' (Ô ' + (bI + 1) + '/' + n + ': ' + r.rawBin + ')'
         });
       });
     } else {
