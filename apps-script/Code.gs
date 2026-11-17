@@ -568,6 +568,36 @@ const API = {
     const user = auth_(req);
     if (user.vaiTro !== 'ADMIN') throw new Error('Không có quyền');
     return rows_('Users').map(function (u) { return { ma: u.ma, ten: u.ten, vaiTro: u.vaiTro, hoatDong: u.hoatDong }; });
+  },
+
+  saveSlotNote: function (req) {
+    const loc = String(req.loc || '').trim().toUpperCase();
+    const note = String(req.note || '').trim();
+    if (!loc) throw new Error('Thiếu mã vị trí ô kệ');
+    const props = PropertiesService.getScriptProperties();
+    let map = {};
+    try { map = JSON.parse(props.getProperty('SLOT_NOTES') || '{}'); } catch (e) {}
+    if (note) {
+      map[loc] = {
+        note: note,
+        px: String(req.px || '').trim(),
+        chuyen: String(req.chuyen || '').trim(),
+        status: String(req.status || '').trim(),
+        time: Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm'),
+        user: (req.user && (req.user.ten || req.user.ma)) || String(req.user || 'kho')
+      };
+    } else {
+      delete map[loc];
+    }
+    props.setProperty('SLOT_NOTES', JSON.stringify(map));
+    return { ok: true, slotNotes: map };
+  },
+
+  getSlotNotes: function () {
+    const props = PropertiesService.getScriptProperties();
+    let map = {};
+    try { map = JSON.parse(props.getProperty('SLOT_NOTES') || '{}'); } catch (e) {}
+    return map;
   }
 };
 
@@ -606,12 +636,15 @@ function getData_() {
     o.thoiGian = fmt_(o.thoiGian);
     return o;
   });
+  let slotNotes = {};
+  try { slotNotes = JSON.parse(PropertiesService.getScriptProperties().getProperty('SLOT_NOTES') || '{}'); } catch (e) {}
   return {
     kho: KHO,
     shelves: rows_('Shelves'),
     items: rows_('Items'),
     stock: rows_('Stock').filter(function (s) { return Number(s.soLuong) > 0; })
       .map(function (s) { return { ke: s.ke, tang: Number(s.tang), o: Number(s.o), maVT: String(s.maVT), soLuong: Number(s.soLuong) }; }),
+    slotNotes: slotNotes,
     logs: recent,
     serverTime: fmt_(new Date())
   };

@@ -676,6 +676,40 @@ section{animation:fadeUp .22s var(--ease)}
 }
 .modal-head{font-size:16px;font-weight:800;margin-bottom:12px;color:var(--ink)}
 
+
+/* Ghi chú ô kệ & Chuyền may / Phân xưởng */
+.cell.has-note{position:relative}
+.cell.has-note::after{
+  content:'';position:absolute;top:-2px;right:-2px;width:6px;height:6px;
+  border-radius:50%;background:#ea580c;border:1.5px solid #fff;box-shadow:0 0 4px #ea580c;z-index:3;
+}
+.shelf-note-box{
+  background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;padding:12px 14px;margin:12px 0;
+}
+.shelf-note-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.shelf-note-cur{
+  background:#fff;border:1px solid #fef08a;border-radius:10px;padding:8px 12px;margin-bottom:8px;
+}
+.shelf-note-text{font-size:14px;color:#92400e;line-height:1.4}
+.note-chip-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.nchip{
+  border:1px solid var(--line-strong);border-radius:99px;padding:4px 10px;font-size:12px;
+  font-weight:700;cursor:pointer;background:#fff;color:var(--ink);transition:all .12s;
+}
+.nchip:hover{transform:scale(1.05);border-color:var(--brand)}
+.nchip.px{background:#ede9fe;border-color:#c4b5fd;color:#6d28d9}
+.nchip.ch{background:#e0f2fe;border-color:#bae6fd;color:#0284c7}
+.nchip.st{background:#fee2e2;border-color:#fca5a5;color:#b91c1c}
+.nchip.warn{background:#ffedd5;border-color:#fdba74;color:#c2410c}
+.badge-shortage{
+  display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;
+  background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;font-size:11.5px;font-weight:800;
+}
+.badge-owed{
+  display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;
+  background:#ffedd5;color:#c2410c;border:1px solid #fdba74;font-size:11.5px;font-weight:800;
+}
+
 </style>
 </head>
 <body>
@@ -1358,6 +1392,7 @@ if (storedGh) {
 let GH_URL = storedGh || DEFAULT_GH_URL;
 let SESS = load(LS.sess, null);
 let K = load(LS.data, { shelves:[], items:[], stock:[], logs:[] });
+let slotNotes = load('km.slotNotes', {});
 let Q = load(LS.queue, []);
 let ERRS = load(LS.err, []);
 let soundOn = load(LS.sound, true);
@@ -2027,6 +2062,21 @@ function renderQty(){
       '<div class="small muted">' + esc(itemLabel(F.ma)) + '</div>' +
       '<div class="small" style="margin-top:6px">Tồn hiện tại trong ô: <b class="num-tab">' + fmt(have) + '</b></div>' +
       '<input class="qty-input" id="qty" type="number" inputmode="numeric" min="1" value="' + def + '">' +
+      '<div style="margin:10px 0;text-align:left">' +
+        '<label class="xs muted" style="font-weight:700;display:block;margin-bottom:4px">GHI CHÚ / CHUYỀN / PX / NỢ THIẾU:</label>' +
+        '<div class="note-chip-row" style="margin-bottom:6px">' +
+          '<button type="button" class="nchip px" data-fq-chip="PX A2">PX A2</button>' +
+          '<button type="button" class="nchip px" data-fq-chip="PX B2">PX B2</button>' +
+          '<button type="button" class="nchip ch" data-fq-chip="Chuyền 1">Chuyền 1</button>' +
+          '<button type="button" class="nchip ch" data-fq-chip="Chuyền 2">Chuyền 2</button>' +
+          '<button type="button" class="nchip ch" data-fq-chip="Chuyền 3">Chuyền 3</button>' +
+          '<button type="button" class="nchip ch" data-fq-chip="Chuyền 5">Chuyền 5</button>' +
+          '<button type="button" class="nchip st" data-fq-chip="Giao thiếu">⚠️ Giao thiếu</button>' +
+          '<button type="button" class="nchip st" data-fq-chip="Còn nợ xưởng">⚠️ Còn nợ xưởng</button>' +
+          '<button type="button" class="nchip warn" data-fq-chip="Bù hàng đợt 2">Bù hàng đợt 2</button>' +
+        '</div>' +
+        '<input type="text" class="inp" id="qtyNote" placeholder="Ghi chú (VD: Chuyền 3 PX A2, Giao thiếu 50 đôi nợ bù...)" value="">' +
+      '</div>' +
       '<div class="qty-pad">' +
         '<button type="button" data-d="-10">−10</button><button type="button" data-d="-5">−5</button><button type="button" data-d="-1">−1</button><button type="button" data-d="1">+1</button>' +
         '<button type="button" data-d="5">+5</button><button type="button" data-d="10">+10</button><button type="button" data-d="20">+20</button><button type="button" data-d="50">+50</button>' +
@@ -2039,6 +2089,15 @@ function renderQty(){
   setTimeout(() => { q.focus(); q.select(); }, 60);
   $$('#qtyArea [data-d]').forEach(b => b.onclick = () => { q.value = Math.max(1, (parseInt(q.value, 10) || 0) + +b.dataset.d); });
   if ($('#qtyAll')) $('#qtyAll').onclick = () => { q.value = have; };
+  $('#qtyArea [data-fq-chip]').forEach(b => b.onclick = () => {
+    const chip = b.dataset.fqChip;
+    const inp = $('#qtyNote');
+    if (!inp) return;
+    const cur = inp.value.trim();
+    if (!cur) inp.value = chip;
+    else if (!cur.includes(chip)) inp.value = cur + ' · ' + chip;
+    inp.focus();
+  });
   $('#qtySave').onclick = saveQty;
   $('#qtyCancel').onclick = () => flowStep('item');
   q.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveQty(); } });
@@ -2051,7 +2110,12 @@ function saveQty(){
     const have = (cellItems(F.loc).find(r => r.maVT === F.ma) || {}).soLuong || 0;
     if (sl > have) { beep(false); toast('Ô chỉ còn ' + fmt(have) + ' — không xuất quá tồn', 'err'); return; }
   }
-  enqueue({ loai: F.mode, ke: F.loc.ke, tang: F.loc.tang, o: F.loc.o, maVT: F.ma, soLuong: sl });
+  const flowNote = ($('#qtyNote') ? $('#qtyNote').value.trim() : '');
+  enqueue({ loai: F.mode, ke: F.loc.ke, tang: F.loc.tang, o: F.loc.o, maVT: F.ma, soLuong: sl, ghiChu: flowNote });
+  if (flowNote) {
+    const locKey = F.loc.ke + '-T' + F.loc.tang + '-O' + F.loc.o;
+    saveSlotNote(locKey, flowNote);
+  }
   const lq = load(LS.lastQty, {}); lq[F.ma] = sl; save(LS.lastQty, lq);
   const rc = load(LS.recent, []).filter(m => m !== F.ma); rc.unshift(F.ma); save(LS.recent, rc.slice(0, 8));
   beep(true);
@@ -2632,6 +2696,8 @@ function reconcileRun(){
     const outDiff = g.appOut - g.extOut;
     const stockDiff = g.appStock - g.targetStock;
 
+    const delivered = g.extIn || g.appIn || 0;
+    const planShortage = (g.extPlan > 0 && delivered > 0 && delivered < g.extPlan) ? (g.extPlan - delivered) : 0;
     const isPlanOnly = (g.extPlan > 0 && g.targetStock === 0 && g.appStock === 0 && g.extIn === 0);
     const isDoneOrder = (g.extIn > 0 && g.extOut >= g.extIn && g.targetStock === 0 && g.appStock === 0);
     const isNoShelf = (g.targetStock > 0 || g.appStock > 0) && !g.fileKe && !appKe;
@@ -2659,7 +2725,7 @@ function reconcileRun(){
     return Object.assign(g, {
       appKe, appTang, appO,
       inDiff, outDiff, stockDiff,
-      isPlanOnly, isDoneOrder, isNoShelf, isLocDiff, isQtyDiff, isFullySyncedOnSheet, ok, status
+      delivered, planShortage, isPlanOnly, isDoneOrder, isNoShelf, isLocDiff, isQtyDiff, isFullySyncedOnSheet, ok, status
     });
   }).sort((a, b) => {
     // Ưu tiên dòng có tồn kho đưa lên đầu để thủ kho theo dõi
@@ -3245,8 +3311,12 @@ function rackCardsHtml(rows, blink, compact, filterRange){
       g += '<span class="tlbl">T' + t + '</span>';
       for (let o = 1; o <= SO_O; o++) {
         const q = cellQty(ke, t, o, rows);
+        const slotKey = ke + '-T' + t + '-O' + o;
+        const sn = slotNotes[slotKey];
+        const snText = sn ? (sn.note || sn) : '';
+        const hasNote = !!snText;
         const isBlink = blink && blink.some(b => b.ke === ke && b.tang === t && b.o === o);
-        g += '<span class="cell' + (q > 0 ? (q >= maxCell * .7 ? ' hot' : ' on') : '') + (isBlink ? ' blink' : '') + '" data-rack-cell="' + ke + '|' + t + '|' + o + '" title="' + ke + '-T' + t + '-O' + o + (q > 0 ? ': ' + fmt(q) + ' đôi' : ': Trống') + '"></span>';
+        g += '<span class="cell' + (q > 0 ? (q >= maxCell * .7 ? ' hot' : ' on') : '') + (isBlink ? ' blink' : '') + (hasNote ? ' has-note' : '') + '" data-rack-cell="' + ke + '|' + t + '|' + o + '" title="' + ke + '-T' + t + '-O' + o + (q > 0 ? ': ' + fmt(q) + ' đôi' : ': Trống') + (hasNote ? ' · 📝 ' + snText : '') + '"></span>';
       }
     }
     const isSel = mapSel === ke && !compact;
@@ -3254,7 +3324,11 @@ function rackCardsHtml(rows, blink, compact, filterRange){
     h += '<div class="rack-card' + (isSel ? ' sel' : '') + (isBlinkRack ? ' blink-rack' : '') + '" data-rack="' + ke + '" role="button" tabindex="0">' +
       '<div class="rack-top"><b>' + ke + '</b><span class="' + (st.cells ? 'on' : '') + '">' + st.cells + '/12 ô</span></div>' +
       '<div class="grid34">' + g + '</div>' +
-      (compact ? '' : '<div class="rack-foot"><span>' + fmt(st.qty) + ' đôi</span><span>' + (st.qty ? 'Đang chứa' : 'Trống') + '</span></div>') +
+      (compact ? '' : (() => {
+      const rackNotes = Object.keys(slotNotes).filter(k => k.startsWith(ke + '-')).map(k => slotNotes[k].note || slotNotes[k]).filter(Boolean);
+      const noteBadge = rackNotes.length ? '<span class="tag" style="background:#fef3c7;color:#b45309;font-size:10.5px;padding:1px 6px">📝 ' + esc(rackNotes[0].slice(0, 10)) + '</span>' : '';
+      return '<div class="rack-foot"><span>' + fmt(st.qty) + ' đôi</span>' + (noteBadge || '<span>' + (st.qty ? 'Đang chứa' : 'Trống') + '</span>') + '</div>';
+    })()) +
     '</div>';
   }
   return h;
@@ -3421,6 +3495,38 @@ $('#mapSearch').addEventListener('input', e => {
    ===================================================================== */
 let shelfModalState = { ke: 'K01', tang: 0, o: 0 };
 
+
+function saveSlotNote(locKey, noteText) {
+  locKey = String(locKey || '').trim().toUpperCase();
+  noteText = String(noteText || '').trim();
+  if (!locKey) return;
+
+  const now = new Date();
+  const timeStr = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear() + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const userName = (SESS && SESS.user && SESS.user.ten) || 'kho';
+
+  if (noteText) {
+    slotNotes[locKey] = {
+      note: noteText,
+      time: timeStr,
+      user: userName
+    };
+  } else {
+    delete slotNotes[locKey];
+  }
+  save('km.slotNotes', slotNotes);
+
+  // Gửi đồng bộ lên Google Apps Script
+  if (API) {
+    post('saveSlotNote', { loc: locKey, note: noteText, user: userName }).catch(() => {});
+  }
+
+  beep(true);
+  toast(noteText ? ('Đã lưu ghi chú cho ' + locKey) : ('Đã xoá ghi chú ' + locKey), 'ok');
+  renderShelfModal();
+  if (view === 'map') renderMap();
+}
+
 function openShelfModal(ke, tang, o) {
   ke = String(ke || 'K01').trim().toUpperCase();
   shelfModalState = { ke: ke, tang: Number(tang) || 0, o: Number(o) || 0 };
@@ -3488,6 +3594,51 @@ function renderShelfModal() {
   let quickNav = '<div class="shelf-quick-nav">' +
     '<div>' + floorChipsHtml + '</div>' +
     '<div><span class="xs muted" style="font-weight:700;display:block;margin-bottom:4px;text-align:right">CHỌN NHANH Ô TRÊN KỆ:</span>' + miniGridHtml + '</div>' +
+  '</div>';
+
+  // 1.5. Khối Ghi chú Ô Kệ & Phân xưởng / Chuyền may (Hỗ trợ note nợ / thiếu)
+  const slotKey = (tang && o) ? (ke + '-T' + tang + '-O' + o) : (tang ? (ke + '-T' + tang) : ke);
+  const curSlotNoteObj = slotNotes[slotKey];
+  const curSlotNote = curSlotNoteObj ? (curSlotNoteObj.note || curSlotNoteObj) : '';
+  const curSlotTime = curSlotNoteObj && curSlotNoteObj.time ? curSlotNoteObj.time : '';
+  const curSlotUser = curSlotNoteObj && curSlotNoteObj.user ? curSlotNoteObj.user : '';
+
+  let noteSectionHtml = '<div class="shelf-note-box">' +
+    '<div class="shelf-note-head">' +
+      '<span class="lbl" style="color:#b45309;font-weight:800;display:flex;align-items:center;gap:6px">' +
+        '📝 GHI CHÚ Ô KỆ & PHÂN XƯỞNG / CHUYỀN MAY' +
+      '</span>' +
+      (curSlotNote ? '<span class="badge" style="background:#fef3c7;color:#b45309;font-weight:700">● Đã có ghi chú</span>' : '<span class="xs muted">Chưa có ghi chú</span>') +
+    '</div>' +
+    (curSlotNote ? (
+      '<div class="shelf-note-cur">' +
+        '<div class="shelf-note-text">📌 <b>' + esc(curSlotNote) + '</b></div>' +
+        (curSlotTime ? '<div class="xs muted" style="margin-top:3px">Cập nhật: ' + esc(curSlotTime) + (curSlotUser ? ' · Người ghi: ' + esc(curSlotUser) : '') + '</div>' : '') +
+      '</div>'
+    ) : '') +
+    '<div style="margin-top:8px">' +
+      '<div class="xs muted" style="font-weight:700;margin-bottom:5px">CHỌN NHANH ĐỂ THÊM VÀO GHI CHÚ (CHUYỀN / PX / NỢ / THIẾU):</div>' +
+      '<div class="note-chip-row">' +
+        '<button type="button" class="nchip px" data-add-tag="PX A2">PX A2</button>' +
+        '<button type="button" class="nchip px" data-add-tag="PX B2">PX B2</button>' +
+        '<button type="button" class="nchip px" data-add-tag="PX A1">PX A1</button>' +
+        '<button type="button" class="nchip px" data-add-tag="PX B1">PX B1</button>' +
+        '<button type="button" class="nchip ch" data-add-tag="Chuyền 1">Chuyền 1</button>' +
+        '<button type="button" class="nchip ch" data-add-tag="Chuyền 2">Chuyền 2</button>' +
+        '<button type="button" class="nchip ch" data-add-tag="Chuyền 3">Chuyền 3</button>' +
+        '<button type="button" class="nchip ch" data-add-tag="Chuyền 4">Chuyền 4</button>' +
+        '<button type="button" class="nchip ch" data-add-tag="Chuyền 5">Chuyền 5</button>' +
+        '<button type="button" class="nchip st" data-add-tag="Giao thiếu">⚠️ Giao thiếu</button>' +
+        '<button type="button" class="nchip st" data-add-tag="Còn nợ">⚠️ Còn nợ</button>' +
+        '<button type="button" class="nchip warn" data-add-tag="Chờ bù hàng">Chờ bù hàng</button>' +
+        '<button type="button" class="nchip ch" data-add-tag="Đơn gấp xuất">Đơn gấp xuất</button>' +
+      '</div>' +
+      '<div class="row" style="margin-top:8px;gap:8px">' +
+        '<input type="text" class="inp" id="smNoteInput" placeholder="Nhập ghi chú cho ' + esc(code) + ' (VD: Chuyền 3 PX A2, Giao thiếu 50 đôi nợ lại...)" value="' + esc(curSlotNote) + '">' +
+        '<button type="button" class="btn btn-pri btn-sm" id="smBtnSaveNote" style="white-space:nowrap">💾 Lưu ghi chú</button>' +
+        (curSlotNote ? '<button type="button" class="btn btn-ghost btn-sm" id="smBtnClearNote" style="color:var(--rose-600);white-space:nowrap">Xoá</button>' : '') +
+      '</div>' +
+    '</div>' +
   '</div>';
 
   // 2. Thẻ thống kê KPI
@@ -3559,7 +3710,27 @@ function renderShelfModal() {
     '<button type="button" class="btn btn-ghost btn-sm" id="smBtnClose">Đóng</button>' +
   '</div>';
 
-  $('#shelfModalBody').innerHTML = quickNav + statsHtml + itemsHtml + bottomBar;
+  $('#shelfModalBody').innerHTML = quickNav + noteSectionHtml + statsHtml + itemsHtml + bottomBar;
+
+  // Bắt sự kiện chọn tag nhanh cho ghi chú
+  $('#shelfModalBody [data-add-tag]').forEach(b => b.onclick = () => {
+    const tag = b.dataset.addTag;
+    const inp = $('#smNoteInput');
+    if (!inp) return;
+    const curVal = inp.value.trim();
+    if (!curVal) inp.value = tag;
+    else if (!curVal.includes(tag)) inp.value = curVal + ' · ' + tag;
+    inp.focus();
+  });
+
+  if ($('#smBtnSaveNote')) $('#smBtnSaveNote').onclick = () => {
+    const val = ($('#smNoteInput') ? $('#smNoteInput').value.trim() : '');
+    saveSlotNote(slotKey, val);
+  };
+
+  if ($('#smBtnClearNote')) $('#smBtnClearNote').onclick = () => {
+    saveSlotNote(slotKey, '');
+  };
 
   // Bắt sự kiện chọn ô trên lưới mini
   $('#shelfModalBody [data-sm-cell]').forEach(b => b.onclick = () => {
