@@ -1394,6 +1394,7 @@ let GH_URL = storedGh || DEFAULT_GH_URL;
 let SESS = load(LS.sess, null);
 let K = load(LS.data, { shelves:[], items:[], stock:[], logs:[] });
 let slotNotes = load('km.slotNotes', {});
+let poNotes = load('km.poNotes', {});
 let Q = load(LS.queue, []);
 let ERRS = load(LS.err, []);
 let soundOn = load(LS.sound, true);
@@ -3497,6 +3498,94 @@ $('#mapSearch').addEventListener('input', e => {
 let shelfModalState = { ke: 'K01', tang: 0, o: 0 };
 
 
+
+let reloState = null; // { maVT, fromKe, fromTang, fromO, maxQty, po, shoeName, note }
+
+function rackOptionsHtml(selectedKe) {
+  let h = '';
+  for (let i = 1; i <= SO_KE; i++) {
+    const k = keCode(i);
+    const zone = i <= 13 ? 'Dãy A' : 'Dãy B';
+    h += '<option value="' + k + '"' + (k === selectedKe ? ' selected' : '') + '>' + k + ' (' + zone + ')</option>';
+  }
+  return h;
+}
+
+function savePoNote(key, noteText) {
+  key = String(key || '').trim().toUpperCase();
+  noteText = String(noteText || '').trim();
+  if (!key) return;
+  if (noteText) {
+    poNotes[key] = noteText;
+  } else {
+    delete poNotes[key];
+  }
+  save('km.poNotes', poNotes);
+
+  const it = (K.items || []).find(i => String(i.ma).toUpperCase() === key);
+  if (it) {
+    it.ghiChu = noteText;
+    save(LS.data, K);
+  }
+
+  if (API) {
+    post('saveItem', { item: { ma: key, ghiChu: noteText } }).catch(() => {});
+  }
+
+  beep(true);
+  toast(noteText ? ('Đã lưu ghi chú cho PO: ' + key) : ('Đã xoá ghi chú PO ' + key), 'ok');
+  renderShelfModal();
+}
+
+function executeRelocate(maVT, fromKe, fromTang, fromO, toKe, toTang, toO, qty, note) {
+  qty = parseInt(qty, 10);
+  if (!(qty > 0)) { toast('Số lượng chuyển phải lớn hơn 0', 'err'); return; }
+  const fromCode = fromKe + '-T' + fromTang + '-O' + fromO;
+  const toCode = toKe + '-T' + toTang + '-O' + toO;
+  if (fromCode === toCode) { toast('Vị trí đích phải khác vị trí cũ', 'err'); return; }
+
+  const fullNote = (note ? note + ' · ' : '') + 'Sắp kệ từ ' + fromCode + ' sang ' + toCode;
+
+  // 1. Giảm ở vị trí cũ
+  enqueue({
+    loai: 'XUAT',
+    ke: fromKe,
+    tang: fromTang,
+    o: fromO,
+    maVT: maVT,
+    soLuong: qty,
+    ghiChu: fullNote
+  });
+
+  // 2. Tăng ở vị trí mới
+  enqueue({
+    loai: 'NHAP',
+    ke: toKe,
+    tang: toTang,
+    o: toO,
+    maVT: maVT,
+    soLuong: qty,
+    ghiChu: fullNote
+  });
+
+  // 3. Nếu có ghi chú, cập nhật luôn cho ô mới
+  if (note) {
+    saveSlotNote(toCode, note);
+  }
+
+  save(LS.data, K);
+  flush();
+  beep(true);
+  toast('Đã sắp ' + fmt(qty) + ' đôi ' + maVT + ' sang ' + toCode, 'ok');
+
+  reloState = null;
+  shelfModalState.ke = fromKe;
+  shelfModalState.tang = fromTang;
+  shelfModalState.o = fromO;
+  renderShelfModal();
+  if (view === 'map') renderMap();
+}
+
 function saveSlotNote(locKey, noteText) {
   locKey = String(locKey || '').trim().toUpperCase();
   noteText = String(noteText || '').trim();
@@ -3684,6 +3773,10 @@ function renderShelfModal() {
         const khuon = (rec && rec.khuon) || it.khuon || it.model || '';
         const slkh = rec && rec.extPlan;
 
+        const poKey = String(po || r.maVT).toUpperCase();
+        const curPoNote = poNotes[poKey] || (it && it.ghiChu) || '';
+        const isReloThis = reloState && reloState.maVT === r.maVT && reloState.fromKe === r.ke && reloState.fromTang === r.tang && reloState.fromO === r.o;
+
         return '<div class="shelf-mat-card">' +
           '<div class="shelf-mat-top">' +
             '<div>' +
@@ -3700,9 +3793,92 @@ function renderShelfModal() {
             (slkh ? '<span class="tag" style="background:#e0f2fe;color:#0369a1;font-weight:700">SLKH: ' + fmt(slkh) + '</span>' : '') +
             (!o ? '<span class="tag" style="background:#f1f5f9;color:#475569;font-weight:700">Vị trí: ' + r.ke + '-T' + r.tang + '-O' + r.o + '</span>' : '') +
           '</div>' +
-          '<div class="row" style="margin-top:10px;gap:8px;justify-content:flex-end">' +
-            '<button type="button" class="btn btn-pri btn-sm" data-sm-act-in="' + r.ke + '|' + r.tang + '|' + r.o + '|' + esc(r.maVT) + '">+ Nhập thêm</button>' +
+
+          '<!-- Ghi chú riêng cho từng PO -->' +
+          '<div style="margin-top:10px;padding:9px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+              '<span class="xs muted" style="font-weight:800;color:#0284c7">📝 GHI CHÚ RIÊNG CHO PO NÀY:</span>' +
+              (curPoNote ? '<span class="tag" style="background:#fef3c7;color:#b45309;font-weight:700;font-size:11px">Đã ghi chú</span>' : '') +
+            '</div>' +
+            (curPoNote ? '<div style="font-size:13.5px;font-weight:700;color:#92400e;margin-bottom:6px">📌 ' + esc(curPoNote) + '</div>' : '') +
+            '<div class="note-chip-row" style="margin-bottom:6px">' +
+              '<button type="button" class="nchip px" data-po-chip="' + esc(poKey) + '" data-val="PX A2">PX A2</button>' +
+              '<button type="button" class="nchip px" data-po-chip="' + esc(poKey) + '" data-val="PX B2">PX B2</button>' +
+              '<button type="button" class="nchip px" data-po-chip="' + esc(poKey) + '" data-val="PX A1">PX A1</button>' +
+              '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Chuyền 1">Chuyền 1</button>' +
+              '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Chuyền 2">Chuyền 2</button>' +
+              '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Chuyền 3">Chuyền 3</button>' +
+              '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Chuyền 5">Chuyền 5</button>' +
+              '<button type="button" class="nchip st" data-po-chip="' + esc(poKey) + '" data-val="Giao thiếu">Giao thiếu</button>' +
+              '<button type="button" class="nchip st" data-po-chip="' + esc(poKey) + '" data-val="Còn nợ">Còn nợ</button>' +
+              '<button type="button" class="nchip warn" data-po-chip="' + esc(poKey) + '" data-val="Chờ bù hàng">Chờ bù</button>' +
+            '</div>' +
+            '<div class="row" style="gap:6px">' +
+              '<input type="text" class="inp" id="poNoteInp_' + esc(poKey) + '" placeholder="Ghi chú cho PO (VD: Chuyền 3 PX A2, Giao thiếu 50 đôi...)" value="' + esc(curPoNote) + '" style="font-size:13px;padding:6px 10px">' +
+              '<button type="button" class="btn btn-pri btn-sm" data-save-po-note="' + esc(poKey) + '" style="font-size:12px;padding:6px 12px;white-space:nowrap">💾 Lưu PO</button>' +
+              (curPoNote ? '<button type="button" class="btn btn-ghost btn-sm" data-clear-po-note="' + esc(poKey) + '" style="font-size:12px;padding:6px 10px;color:var(--rose-600);white-space:nowrap">Xoá</button>' : '') +
+            '</div>' +
+          '</div>' +
+
+          (isReloThis ? (
+            '<!-- Khung nhập Sắp kệ -->' +
+            '<div style="background:#f0fdfa;border:2px solid #0d9488;border-radius:14px;padding:14px;margin-top:10px">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+                '<strong style="color:#0f766e;font-size:15px">📦 SẮP KỆ MỚI CHO: ' + esc(shoeName) + ' (' + esc(r.maVT) + ')</strong>' +
+                '<span class="badge" style="background:#ccfbf1;color:#0f766e;font-weight:800">Tồn: ' + fmt(r.soLuong) + ' đôi</span>' +
+              '</div>' +
+              '<div class="small muted" style="margin-bottom:8px">' +
+                'Chuyển từ vị trí hiện tại: <b class="mono" style="color:var(--ink)">' + r.ke + '-T' + r.tang + '-O' + r.o + '</b>' +
+              '</div>' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">' +
+                '<div>' +
+                  '<label class="xs muted" style="font-weight:700">CHỌN KỆ ĐÍCH</label>' +
+                  '<select class="inp" id="reloKe" style="padding:6px 8px;font-weight:700">' +
+                    rackOptionsHtml(r.ke === 'K01' ? 'K02' : r.ke) +
+                  '</select>' +
+                '</div>' +
+                '<div>' +
+                  '<label class="xs muted" style="font-weight:700">TẦNG (1–3)</label>' +
+                  '<select class="inp" id="reloTang" style="padding:6px 8px;font-weight:700">' +
+                    '<option value="1">T1 (đáy)</option>' +
+                    '<option value="2">T2 (giữa)</option>' +
+                    '<option value="3">T3 (trên cùng)</option>' +
+                  '</select>' +
+                '</div>' +
+                '<div>' +
+                  '<label class="xs muted" style="font-weight:700">Ô (1–4)</label>' +
+                  '<select class="inp" id="reloO" style="padding:6px 8px;font-weight:700">' +
+                    '<option value="1">Ô 1</option>' +
+                    '<option value="2">Ô 2</option>' +
+                    '<option value="3">Ô 3</option>' +
+                    '<option value="4">Ô 4</option>' +
+                  '</select>' +
+                '</div>' +
+              '</div>' +
+              '<div style="margin-bottom:8px">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center">' +
+                  '<label class="xs muted" style="font-weight:700">SỐ LƯỢNG SẮP KỆ (ĐÔI)</label>' +
+                  '<button type="button" class="btn btn-ghost btn-sm" id="reloAllQty" style="font-size:11px;padding:1px 6px">Chuyển hết (' + fmt(r.soLuong) + ')</button>' +
+                '</div>' +
+                '<input type="number" class="inp" id="reloQty" min="1" max="' + r.soLuong + '" value="' + r.soLuong + '" style="font-weight:800;color:#0d9488;font-size:16px">' +
+              '</div>' +
+              '<div style="margin-bottom:10px">' +
+                '<label class="xs muted" style="font-weight:700">GHI CHÚ VỊ TRÍ MỚI (PX / CHUYỀN / NỢ)</label>' +
+                '<input type="text" class="inp" id="reloNote" placeholder="Ghi chú vị trí mới..." value="' + esc(curPoNote || '') + '">' +
+              '</div>' +
+              '<div class="row" style="gap:8px;justify-content:flex-end">' +
+                '<button type="button" class="btn btn-ghost btn-sm" id="reloCancel">Huỷ</button>' +
+                '<button type="button" class="btn btn-pri btn-sm" id="reloConfirm" style="background:linear-gradient(135deg,#0d9488,#0284c7)">' +
+                  '✔ Xác nhận xếp vào ô kệ mới' +
+                '</button>' +
+              '</div>' +
+            '</div>'
+          ) : '') +
+
+          '<div class="row wrap" style="margin-top:10px;gap:8px;justify-content:flex-end">' +
+            '<button type="button" class="btn btn-pri btn-sm" data-sm-relo="' + r.ke + '|' + r.tang + '|' + r.o + '|' + esc(r.maVT) + '|' + r.soLuong + '|' + esc(poKey) + '|' + esc(shoeName) + '" style="background:linear-gradient(135deg,#0d9488,#0284c7)">📦 Sắp kệ</button>' +
             '<button type="button" class="btn btn-ghost btn-sm" data-sm-act-out="' + r.ke + '|' + r.tang + '|' + r.o + '|' + esc(r.maVT) + '">− Xuất mã này</button>' +
+            '<button type="button" class="btn btn-ghost btn-sm" data-sm-act-in="' + r.ke + '|' + r.tang + '|' + r.o + '|' + esc(r.maVT) + '">+ Nhập thêm</button>' +
           '</div>' +
         '</div>';
       }).join('') +
@@ -3795,6 +3971,66 @@ function renderShelfModal() {
   };
 
   if ($('#smBtnClose')) $('#smBtnClose').onclick = closeShelfModal;
+
+  // Bắt sự kiện gắn tag chip cho từng PO
+  $$('#shelfModalBody [data-po-chip]').forEach(b => b.onclick = () => {
+    const poKey = b.dataset.poChip;
+    const val = b.dataset.val;
+    const inp = $('#poNoteInp_' + CSS.escape(poKey));
+    if (!inp) return;
+    const cur = inp.value.trim();
+    if (!cur) inp.value = val;
+    else if (!cur.includes(val)) inp.value = cur + ' · ' + val;
+    inp.focus();
+  });
+
+  // Bắt sự kiện lưu ghi chú PO
+  $$('#shelfModalBody [data-save-po-note]').forEach(b => b.onclick = () => {
+    const poKey = b.dataset.savePoNote;
+    const inp = $('#poNoteInp_' + CSS.escape(poKey));
+    savePoNote(poKey, inp ? inp.value : '');
+  });
+
+  // Bắt sự kiện xoá ghi chú PO
+  $$('#shelfModalBody [data-clear-po-note]').forEach(b => b.onclick = () => {
+    const poKey = b.dataset.clearPoNote;
+    savePoNote(poKey, '');
+  });
+
+  // Bắt sự kiện mở form Sắp kệ
+  $$('#shelfModalBody [data-sm-relo]').forEach(b => b.onclick = () => {
+    const parts = b.dataset.smRelo.split('|');
+    reloState = {
+      fromKe: parts[0],
+      fromTang: +parts[1],
+      fromO: +parts[2],
+      maVT: parts[3],
+      maxQty: +parts[4],
+      po: parts[5],
+      shoeName: parts[6]
+    };
+    renderShelfModal();
+  });
+
+  // Xử lý nút trong form Sắp kệ
+  if ($('#reloCancel')) $('#reloCancel').onclick = () => {
+    reloState = null;
+    renderShelfModal();
+  };
+
+  if ($('#reloAllQty')) $('#reloAllQty').onclick = () => {
+    if (reloState && $('#reloQty')) $('#reloQty').value = reloState.maxQty;
+  };
+
+  if ($('#reloConfirm')) $('#reloConfirm').onclick = () => {
+    if (!reloState) return;
+    const toKe = $('#reloKe').value;
+    const toTang = +$('#reloTang').value;
+    const toO = +$('#reloO').value;
+    const qty = +$('#reloQty').value;
+    const note = $('#reloNote').value.trim();
+    executeRelocate(reloState.maVT, reloState.fromKe, reloState.fromTang, reloState.fromO, toKe, toTang, toO, qty, note);
+  };
 }
 
 function printSingleSlotQr(ke, tang, o) {
