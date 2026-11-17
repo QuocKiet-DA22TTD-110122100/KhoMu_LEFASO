@@ -618,6 +618,7 @@ section{animation:fadeUp .22s var(--ease)}
 .flash.err{background:rgba(225,29,72,.26);opacity:1}
 
 /* ============ CỬA SỔ CHI TIẾT Ô KỆ (MODAL POPUP CHO SƠ ĐỒ KỆ) ============ */
+.lb-modal[hidden]{display:none!important}
 .lb-modal{
   position:fixed;inset:0;z-index:900;background:rgba(15,23,42,.65);
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
@@ -2089,7 +2090,7 @@ function renderQty(){
   setTimeout(() => { q.focus(); q.select(); }, 60);
   $$('#qtyArea [data-d]').forEach(b => b.onclick = () => { q.value = Math.max(1, (parseInt(q.value, 10) || 0) + +b.dataset.d); });
   if ($('#qtyAll')) $('#qtyAll').onclick = () => { q.value = have; };
-  $('#qtyArea [data-fq-chip]').forEach(b => b.onclick = () => {
+  $$('#qtyArea [data-fq-chip]').forEach(b => b.onclick = () => {
     const chip = b.dataset.fqChip;
     const inp = $('#qtyNote');
     if (!inp) return;
@@ -3530,11 +3531,19 @@ function saveSlotNote(locKey, noteText) {
 function openShelfModal(ke, tang, o) {
   ke = String(ke || 'K01').trim().toUpperCase();
   shelfModalState = { ke: ke, tang: Number(tang) || 0, o: Number(o) || 0 };
-  renderShelfModal();
   const m = $('#shelfModal');
   if (m) {
     m.hidden = false;
+    m.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+  }
+  try {
+    renderShelfModal();
+  } catch (err) {
+    console.error('Lỗi renderShelfModal:', err);
+    if ($('#shelfModalBody')) {
+      $('#shelfModalBody').innerHTML = '<div class="panel" style="color:var(--rose-600);padding:16px">Lỗi hiển thị chi tiết: ' + esc(err.message || err) + '</div>';
+    }
   }
 }
 
@@ -3542,6 +3551,7 @@ function closeShelfModal() {
   const m = $('#shelfModal');
   if (m) {
     m.hidden = true;
+    m.style.display = 'none';
     document.body.style.overflow = '';
   }
 }
@@ -3713,7 +3723,7 @@ function renderShelfModal() {
   $('#shelfModalBody').innerHTML = quickNav + noteSectionHtml + statsHtml + itemsHtml + bottomBar;
 
   // Bắt sự kiện chọn tag nhanh cho ghi chú
-  $('#shelfModalBody [data-add-tag]').forEach(b => b.onclick = () => {
+  $$('#shelfModalBody [data-add-tag]').forEach(b => b.onclick = () => {
     const tag = b.dataset.addTag;
     const inp = $('#smNoteInput');
     if (!inp) return;
@@ -3733,14 +3743,14 @@ function renderShelfModal() {
   };
 
   // Bắt sự kiện chọn ô trên lưới mini
-  $('#shelfModalBody [data-sm-cell]').forEach(b => b.onclick = () => {
+  $$('#shelfModalBody [data-sm-cell]').forEach(b => b.onclick = () => {
     const p = b.dataset.smCell.split('|');
     shelfModalState = { ke: p[0], tang: +p[1], o: +p[2] };
     renderShelfModal();
   });
 
   // Bắt sự kiện chọn tầng
-  $('#shelfModalBody [data-sm-floor]').forEach(b => b.onclick = () => {
+  $$('#shelfModalBody [data-sm-floor]').forEach(b => b.onclick = () => {
     const f = +b.dataset.smFloor;
     shelfModalState.tang = f;
     shelfModalState.o = 0;
@@ -3748,13 +3758,13 @@ function renderShelfModal() {
   });
 
   // Bắt sự kiện nhập/xuất trực tiếp từ từng thẻ vật tư
-  $('#shelfModalBody [data-sm-act-in]').forEach(b => b.onclick = () => {
+  $$('#shelfModalBody [data-sm-act-in]').forEach(b => b.onclick = () => {
     const p = b.dataset.smActIn.split('|');
     closeShelfModal();
     go('NHAP', { ke: p[0], tang: +p[1], o: +p[2], ma: p[3] });
   });
 
-  $('#shelfModalBody [data-sm-act-out]').forEach(b => b.onclick = () => {
+  $$('#shelfModalBody [data-sm-act-out]').forEach(b => b.onclick = () => {
     const p = b.dataset.smActOut.split('|');
     closeShelfModal();
     go('XUAT', { ke: p[0], tang: +p[1], o: +p[2], ma: p[3] });
