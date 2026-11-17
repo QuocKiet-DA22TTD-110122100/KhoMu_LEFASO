@@ -531,6 +531,7 @@ section{animation:fadeUp .22s var(--ease)}
 .racks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
 @media (min-width:1100px){.racks-grid{grid-template-columns:repeat(6,1fr)}}
 .rack-card{
+  cursor:pointer;user-select:none;
   background:#fbfefd;border:1.5px solid var(--line);border-radius:14px;padding:10px;text-align:left;
   transition:transform .16s var(--ease),box-shadow .16s var(--ease),border-color .16s;
 }
@@ -546,7 +547,8 @@ section{animation:fadeUp .22s var(--ease)}
 
 .grid34{display:grid;grid-template-columns:18px repeat(4,1fr);gap:3px;align-items:center;padding:5px;background:#edf6f4;border-radius:9px}
 .grid34 .tlbl{font-size:9.5px;font-weight:800;color:var(--muted);text-align:center}
-.cell{height:15px;border-radius:4px;background:#fff;border:1px solid #d9eae6}
+.cell{height:15px;border-radius:4px;background:#fff;border:1px solid #d9eae6;cursor:pointer;transition:transform .12s,border-color .12s,box-shadow .12s}
+.cell:hover{border-color:var(--brand);transform:scale(1.28);z-index:4;position:relative;box-shadow:0 0 6px rgba(13,148,136,.45)}
 .cell.on{background:linear-gradient(135deg,#2dd4bf,#0d9488);border-color:transparent}
 .cell.hot{background:linear-gradient(135deg,#fbbf24,#f59e0b);border-color:transparent}
 .cell.blink{animation:slotBlinkTarget .85s infinite ease-in-out;position:relative;z-index:3;border:1.5px solid #fff;outline:2px solid var(--rose-600)}
@@ -614,6 +616,66 @@ section{animation:fadeUp .22s var(--ease)}
 .flash{position:fixed;inset:0;pointer-events:none;z-index:55;opacity:0;transition:opacity .15s}
 .flash.ok{background:rgba(5,150,105,.22);opacity:1}
 .flash.err{background:rgba(225,29,72,.26);opacity:1}
+
+/* ============ CỬA SỔ CHI TIẾT Ô KỆ (MODAL POPUP CHO SƠ ĐỒ KỆ) ============ */
+.lb-modal{
+  position:fixed;inset:0;z-index:900;background:rgba(15,23,42,.65);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;
+  animation:lbFadeIn .18s ease-out;
+}
+@keyframes lbFadeIn{from{opacity:0}to{opacity:1}}
+.lb-dialog{
+  background:#fff;border:1px solid var(--line-strong);border-radius:20px;
+  box-shadow:0 25px 60px rgba(15,23,42,.26),0 4px 12px rgba(15,23,42,.08);
+  width:100%;max-width:840px;padding:22px;margin:auto;animation:lbScaleUp .2s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes lbScaleUp{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.lb-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.shelf-modal-sub{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.4}
+.shelf-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0}
+.shelf-stat{background:var(--slate-50);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.shelf-stat .lbl{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px}
+.shelf-stat b{display:block;color:var(--ink);font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2}
+.shelf-stat .small{display:block;margin-top:2px;font-size:11.5px;color:var(--muted)}
+.shelf-quick-nav{
+  display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:10px 0;
+}
+.shelf-mini-grid{display:grid;grid-template-columns:28px repeat(4,1fr);gap:4px;align-items:center}
+.shelf-mini-grid .tlbl{font-size:10px;font-weight:800;color:var(--muted);text-align:center}
+.shelf-mini-cell{
+  min-height:30px;min-width:32px;border-radius:6px;border:1px solid var(--line-strong);background:#fff;
+  font-size:11px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all .12s;padding:2px 4px;
+}
+.shelf-mini-cell:hover{border-color:var(--brand);background:var(--teal-50)}
+.shelf-mini-cell.on{background:linear-gradient(135deg,#ccfbf1,#99f6e4);color:#0f766e;border-color:#5eead4}
+.shelf-mini-cell.picked{border:2px solid var(--brand);box-shadow:0 0 0 2px rgba(13,148,136,.3);font-weight:800;background:var(--teal-100)}
+.shelf-mat-card{
+  background:#fff;border:1.5px solid var(--line-strong);border-radius:14px;
+  padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.03);
+}
+.shelf-mat-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.shelf-mat-name{font-size:16px;font-weight:800;color:var(--ink);line-height:1.3}
+.shelf-mat-code{font-family:var(--font-mono);font-size:13px;color:var(--brand-dark);font-weight:700}
+.shelf-mat-qty{font-size:20px;font-weight:800;color:#0d9488;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.shelf-mat-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+@media(max-width:640px){
+  .lb-modal{padding:0}
+  .lb-dialog{border-radius:0;min-height:100vh;padding:14px}
+  .shelf-stats{grid-template-columns:1fr 1fr}
+}
+/* Modal đồng bộ Google Sheet */
+.modal-backdrop{
+  position:fixed;inset:0;z-index:950;background:rgba(15,23,42,.65);
+  backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;
+}
+.modal-card{
+  background:#fff;border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.25);
+  width:100%;max-width:440px;padding:22px;border:1px solid var(--line-strong);
+}
+.modal-head{font-size:16px;font-weight:800;margin-bottom:12px;color:var(--ink)}
+
 </style>
 </head>
 <body>
@@ -1132,6 +1194,21 @@ section{animation:fadeUp .22s var(--ease)}
         </div>
         <div id="rpmText" class="small muted">Đang gửi dữ liệu lên Google Sheet...</div>
       </div>
+    </div>
+  </div>
+
+  <!-- CỬA SỔ CHI TIẾT Ô & KỆ (MODAL POPUP CHO SƠ ĐỒ KỆ) -->
+  <div id="shelfModal" hidden class="lb-modal" role="dialog" aria-modal="true" aria-labelledby="shelfModalTitle">
+    <div class="lb-dialog shelf-dialog">
+      <div class="lb-head">
+        <div>
+          <div class="lbl" id="shelfModalKicker">Vị trí đang xem</div>
+          <h3 id="shelfModalTitle" style="margin:2px 0 0;font-size:20px;font-weight:800;color:var(--ink)">Kệ —</h3>
+          <div class="shelf-modal-sub" id="shelfModalSub"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" type="button" id="shelfModalClose" style="min-width:38px;height:38px;font-size:18px;line-height:1;padding:0;display:grid;place-items:center;border-radius:10px" title="Đóng cửa sổ">✕</button>
+      </div>
+      <div id="shelfModalBody"></div>
     </div>
   </div>
 </main>
@@ -3169,16 +3246,16 @@ function rackCardsHtml(rows, blink, compact, filterRange){
       for (let o = 1; o <= SO_O; o++) {
         const q = cellQty(ke, t, o, rows);
         const isBlink = blink && blink.some(b => b.ke === ke && b.tang === t && b.o === o);
-        g += '<span class="cell' + (q > 0 ? (q >= maxCell * .7 ? ' hot' : ' on') : '') + (isBlink ? ' blink' : '') + '"></span>';
+        g += '<span class="cell' + (q > 0 ? (q >= maxCell * .7 ? ' hot' : ' on') : '') + (isBlink ? ' blink' : '') + '" data-rack-cell="' + ke + '|' + t + '|' + o + '" title="' + ke + '-T' + t + '-O' + o + (q > 0 ? ': ' + fmt(q) + ' đôi' : ': Trống') + '"></span>';
       }
     }
     const isSel = mapSel === ke && !compact;
     const isBlinkRack = blink && blink.some(b => b.ke === ke);
-    h += '<button type="button" class="rack-card' + (isSel ? ' sel' : '') + (isBlinkRack ? ' blink-rack' : '') + '" data-rack="' + ke + '">' +
+    h += '<div class="rack-card' + (isSel ? ' sel' : '') + (isBlinkRack ? ' blink-rack' : '') + '" data-rack="' + ke + '" role="button" tabindex="0">' +
       '<div class="rack-top"><b>' + ke + '</b><span class="' + (st.cells ? 'on' : '') + '">' + st.cells + '/12 ô</span></div>' +
       '<div class="grid34">' + g + '</div>' +
       (compact ? '' : '<div class="rack-foot"><span>' + fmt(st.qty) + ' đôi</span><span>' + (st.qty ? 'Đang chứa' : 'Trống') + '</span></div>') +
-    '</button>';
+    '</div>';
   }
   return h;
 }
@@ -3252,11 +3329,35 @@ function renderMap(arg){
   if (mapFilter !== 'A') html += zoneBlockHtml('B', 'Dãy B — Khu phải', 'b', rows, mapBlink);
   $('#mapRacks').innerHTML = html || '<div class="panel muted">Không có kệ phù hợp bộ lọc.</div>';
 
-  $$('#mapRacks [data-rack]').forEach(b => b.onclick = () => {
-    mapSel = b.dataset.rack; mapSelCell = null;
-    renderMap();
-    $('#mapDetail').scrollIntoView({ behavior:'smooth', block:'nearest' });
-  });
+  $('#mapRacks').onclick = e => {
+    const cellEl = e.target.closest('[data-rack-cell]');
+    if (cellEl) {
+      e.stopPropagation();
+      const p = cellEl.dataset.rackCell.split('|');
+      mapSel = p[0];
+      mapSelCell = { ke: p[0], tang: +p[1], o: +p[2] };
+      openShelfModal(p[0], +p[1], +p[2]);
+      return;
+    }
+    const rackEl = e.target.closest('[data-rack]');
+    if (rackEl) {
+      mapSel = rackEl.dataset.rack;
+      mapSelCell = null;
+      openShelfModal(rackEl.dataset.rack, 0, 0);
+      return;
+    }
+  };
+  $('#mapRacks').onkeydown = e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const rackEl = e.target.closest('[data-rack]');
+      if (rackEl) {
+        e.preventDefault();
+        mapSel = rackEl.dataset.rack;
+        mapSelCell = null;
+        openShelfModal(rackEl.dataset.rack, 0, 0);
+      }
+    }
+  };
   if (mapSel) renderMapDetail(rows); else $('#mapDetail').hidden = true;
   if (arg) setTimeout(() => { const el = document.querySelector('#mapRacks [data-rack="' + mapSel + '"]'); if (el) el.scrollIntoView({ behavior:'smooth', block:'center' }); }, 80);
 }
@@ -3268,8 +3369,13 @@ function renderMapDetail(rows){
   const cList = mapSelCell && mapSelCell.ke === mapSel ? cellItems(mapSelCell, rows) : [];
 
   d.innerHTML =
-    '<div class="panel-head"><h2 class="panel-title">Chi tiết kệ <span class="mono">' + mapSel + '</span></h2>' +
-      '<span class="tag tag-NHAP num-tab">' + fmt(rackQty) + ' đôi</span></div>' +
+    '<div class="panel-head">' +
+      '<div class="row" style="gap:8px;align-items:center">' +
+        '<h2 class="panel-title">Chi tiết kệ <span class="mono">' + mapSel + '</span></h2>' +
+        '<button type="button" class="btn btn-pri btn-sm" id="btnMapOpenModal">👁 Mở cửa sổ nhỏ</button>' +
+      '</div>' +
+      '<span class="tag tag-NHAP num-tab">' + fmt(rackQty) + ' đôi</span>' +
+    '</div>' +
     '<div class="xs muted" style="margin-bottom:10px">Chạm vào một ô bất kỳ để xem hàng và thao tác nhanh</div>' +
     bigGridHtml(mapSel, rows, mapBlink, mapSelCell) +
     (mapSelCell && mapSelCell.ke === mapSel
@@ -3290,7 +3396,9 @@ function renderMapDetail(rows){
     const p = b.dataset.cell.split('|');
     mapSelCell = { ke:p[0], tang:+p[1], o:+p[2] };
     renderMapDetail(rows);
+    openShelfModal(p[0], +p[1], +p[2]);
   });
+  if ($('#btnMapOpenModal')) $('#btnMapOpenModal').onclick = () => openShelfModal(mapSel, mapSelCell ? mapSelCell.tang : 0, mapSelCell ? mapSelCell.o : 0);
   if ($('#cellActIn')) $('#cellActIn').onclick = () => go('NHAP', Object.assign({}, mapSelCell));
   if ($('#cellActOut')) $('#cellActOut').onclick = () => go('XUAT', Object.assign({}, mapSelCell));
   if ($('#cellActCnt')) $('#cellActCnt').onclick = () => go('KIEMKE', Object.assign({}, mapSelCell));
@@ -3305,6 +3413,237 @@ $('#mapSearch').addEventListener('input', e => {
   mapSearchQ = e.target.value.trim();
   if (!mapSearchQ) mapBlink = null;
   renderMap();
+});
+
+
+/* =====================================================================
+   CỬA SỔ CHI TIẾT Ô & KỆ (POPUP MODAL TRÊN SƠ ĐỒ)
+   ===================================================================== */
+let shelfModalState = { ke: 'K01', tang: 0, o: 0 };
+
+function openShelfModal(ke, tang, o) {
+  ke = String(ke || 'K01').trim().toUpperCase();
+  shelfModalState = { ke: ke, tang: Number(tang) || 0, o: Number(o) || 0 };
+  renderShelfModal();
+  const m = $('#shelfModal');
+  if (m) {
+    m.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeShelfModal() {
+  const m = $('#shelfModal');
+  if (m) {
+    m.hidden = true;
+    document.body.style.overflow = '';
+  }
+}
+
+function renderShelfModal() {
+  const ke = shelfModalState.ke;
+  const tang = shelfModalState.tang;
+  const o = shelfModalState.o;
+  const rows = stockRows();
+  const rackRows = rows.filter(r => r.ke === ke);
+  const targetRows = (tang && o)
+    ? rackRows.filter(r => r.tang === tang && r.o === o)
+    : (tang ? rackRows.filter(r => r.tang === tang) : rackRows);
+
+  const targetQty = targetRows.reduce((a, b) => a + b.soLuong, 0);
+  const rackQty = rackRows.reduce((a, b) => a + b.soLuong, 0);
+  const keNum = parseInt(ke.replace(/\D/g, ''), 10) || 1;
+  const zoneName = keNum <= 13 ? 'Dãy A — Khu trái' : 'Dãy B — Khu phải';
+  const usedCellsOnRack = new Set(rackRows.map(r => r.tang + '-' + r.o)).size;
+
+  const title = (tang && o)
+    ? ('Kệ ' + ke + ' · Tầng ' + tang + ' · Ô ' + o)
+    : (tang ? ('Kệ ' + ke + ' · Tầng ' + tang) : ('Kệ ' + ke));
+  const code = (tang && o) ? (ke + '-T' + tang + '-O' + o) : ke;
+
+  if ($('#shelfModalKicker')) $('#shelfModalKicker').textContent = (tang && o) ? 'Vị trí đang chọn' : 'Chi tiết kệ kho mũ';
+  if ($('#shelfModalTitle')) $('#shelfModalTitle').textContent = title + ' (' + code + ')';
+  if ($('#shelfModalSub')) $('#shelfModalSub').textContent = zoneName + ' · ' + fmt(targetQty) + ' đôi' + (tang && o ? '' : ' (' + usedCellsOnRack + '/12 ô có hàng)');
+
+  // 1. Lưới 12 ô chọn nhanh tầng và ô trực tiếp trong popup
+  let miniGridHtml = '<div class="shelf-mini-grid">';
+  for (let t = SO_TANG; t >= 1; t--) {
+    miniGridHtml += '<span class="tlbl">T' + t + '</span>';
+    for (let col = 1; col <= SO_O; col++) {
+      const q = cellQty(ke, t, col, rows);
+      const isPicked = (tang === t && o === col);
+      miniGridHtml += '<button type="button" class="shelf-mini-cell' + (q > 0 ? ' on' : '') + (isPicked ? ' picked' : '') + '" data-sm-cell="' + ke + '|' + t + '|' + col + '" title="' + ke + '-T' + t + '-O' + col + ': ' + (q > 0 ? fmt(q) + ' đôi' : 'Trống') + '">' +
+        'O' + col + (q > 0 ? '<small style="display:block;font-size:9px;line-height:1">' + (q >= 1000 ? Math.round(q/1000) + 'k' : q) + '</small>' : '') +
+      '</button>';
+    }
+  }
+  miniGridHtml += '</div>';
+
+  let floorChipsHtml = '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+    '<span class="xs muted" style="font-weight:700">TẦNG:</span>' +
+    '<button type="button" class="chip-btn' + (!tang ? ' on' : '') + '" data-sm-floor="0">Cả kệ (12 ô)</button>' +
+    [1, 2, 3].map(t => '<button type="button" class="chip-btn' + (tang === t && !o ? ' on' : '') + '" data-sm-floor="' + t + '">Tầng ' + t + '</button>').join('') +
+  '</div>';
+
+  let quickNav = '<div class="shelf-quick-nav">' +
+    '<div>' + floorChipsHtml + '</div>' +
+    '<div><span class="xs muted" style="font-weight:700;display:block;margin-bottom:4px;text-align:right">CHỌN NHANH Ô TRÊN KỆ:</span>' + miniGridHtml + '</div>' +
+  '</div>';
+
+  // 2. Thẻ thống kê KPI
+  const uniqueItems = Array.from(new Set(targetRows.map(r => r.maVT)));
+  let statsHtml = '<div class="shelf-stats">' +
+    '<div class="shelf-stat"><span class="lbl">Tồn vị trí này</span><b style="color:#0d9488">' + fmt(targetQty) + ' đôi</b><span class="small">' + (tang && o ? 'Tại ' + code : 'Toàn kệ ' + ke) + '</span></div>' +
+    '<div class="shelf-stat"><span class="lbl">Chủng loại mũ</span><b>' + uniqueItems.length + ' loại</b><span class="small">' + targetRows.length + ' dòng vị trí</span></div>' +
+    '<div class="shelf-stat"><span class="lbl">Trạng thái ô</span><b>' + (targetQty > 0 ? '<span style="color:#15803d">● Có hàng</span>' : '<span style="color:#64748b">○ Trống</span>') + '</b><span class="small">' + (targetQty > 0 ? 'Sẵn sàng xuất/kiểm' : 'Sẵn sàng nhập hàng') + '</span></div>' +
+    '<div class="shelf-stat"><span class="lbl">Khu vực kho</span><b>' + (keNum <= 13 ? 'Dãy A' : 'Dãy B') + '</b><span class="small">Kệ ' + ke + ' (' + usedCellsOnRack + '/12 ô có hàng)</span></div>' +
+  '</div>';
+
+  // 3. Danh sách thông tin vật tư chi tiết
+  let itemsHtml = '';
+  if (targetRows.length === 0) {
+    itemsHtml = '<div style="text-align:center;padding:32px 16px;background:#f8fafc;border:1.5px dashed var(--line-strong);border-radius:14px;color:var(--muted);margin:12px 0">' +
+      '<div style="font-size:32px;margin-bottom:8px">📦</div>' +
+      '<b style="font-size:16px;color:var(--ink)">Vị trí này hiện đang trống</b>' +
+      '<div class="small" style="margin-top:4px">Chưa có mã mũ nào được lưu tại ' + code + '. Bạn có thể bấm nút bên dưới để nhập hàng ngay vào vị trí này.</div>' +
+      '<div style="margin-top:14px">' +
+        '<button type="button" class="btn btn-pri btn-sm" id="smActEmptyIn">+ Nhập hàng vào vị trí này</button>' +
+      '</div>' +
+    '</div>';
+  } else {
+    itemsHtml = '<div class="list" style="margin:12px 0">' +
+      targetRows.map(r => {
+        const it = itemOf(r.maVT) || {};
+        const reconList = (kkReconResult && kkReconResult.rows) || [];
+        const rec = reconList.find(x => x.ma === r.maVT || x.po === r.maVT);
+        const shoeName = (rec && rec.ma) || (it.ten && it.ten !== r.maVT ? it.ten : '') || r.maVT;
+        const po = (rec && rec.po) || it.po || (r.maVT.startsWith('RB') ? r.maVT : '');
+        const so = (rec && rec.so) || it.so || '';
+        const he = (rec && rec.he) || it.he || it.mau || '';
+        const khuon = (rec && rec.khuon) || it.khuon || it.model || '';
+        const slkh = rec && rec.extPlan;
+
+        return '<div class="shelf-mat-card">' +
+          '<div class="shelf-mat-top">' +
+            '<div>' +
+              '<div class="shelf-mat-name">' + esc(shoeName) + '</div>' +
+              '<div class="shelf-mat-code">Mã: ' + esc(r.maVT) + '</div>' +
+            '</div>' +
+            '<div class="shelf-mat-qty">' + fmt(r.soLuong) + ' <span style="font-size:12px;color:var(--muted)">đôi</span></div>' +
+          '</div>' +
+          '<div class="shelf-mat-tags">' +
+            (po ? '<span class="tag" style="background:#dbeafe;color:#1d4ed8;font-weight:800">PO: ' + esc(po) + '</span>' : '') +
+            (so ? '<span class="tag" style="background:#f3e8ff;color:#7c3aed;font-weight:700">SO: ' + esc(so) + '</span>' : '') +
+            (he ? '<span class="tag" style="background:#fef3c7;color:#b45309;font-weight:700">Hệ: ' + esc(he) + '</span>' : '') +
+            (khuon ? '<span class="tag" style="background:#ccfbf1;color:#0f766e;font-weight:700">Khuôn: ' + esc(khuon) + '</span>' : '') +
+            (slkh ? '<span class="tag" style="background:#e0f2fe;color:#0369a1;font-weight:700">SLKH: ' + fmt(slkh) + '</span>' : '') +
+            (!o ? '<span class="tag" style="background:#f1f5f9;color:#475569;font-weight:700">Vị trí: ' + r.ke + '-T' + r.tang + '-O' + r.o + '</span>' : '') +
+          '</div>' +
+          '<div class="row" style="margin-top:10px;gap:8px;justify-content:flex-end">' +
+            '<button type="button" class="btn btn-pri btn-sm" data-sm-act-in="' + r.ke + '|' + r.tang + '|' + r.o + '|' + esc(r.maVT) + '">+ Nhập thêm</button>' +
+            '<button type="button" class="btn btn-ghost btn-sm" data-sm-act-out="' + r.ke + '|' + r.tang + '|' + r.o + '|' + esc(r.maVT) + '">− Xuất mã này</button>' +
+          '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }
+
+  // 4. Thanh nút hành động nhanh dưới chân popup
+  let bottomBar = '<div class="row wrap" style="justify-content:space-between;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">' +
+    '<div class="row" style="gap:6px">' +
+      '<button type="button" class="btn btn-pri btn-sm" id="smBtnIn">+ Nhập vào ô</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" id="smBtnOut">− Xuất từ ô</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" id="smBtnCount">Kiểm kê ô</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" id="smBtnPrint">📷 In tem QR vị trí</button>' +
+    '</div>' +
+    '<button type="button" class="btn btn-ghost btn-sm" id="smBtnClose">Đóng</button>' +
+  '</div>';
+
+  $('#shelfModalBody').innerHTML = quickNav + statsHtml + itemsHtml + bottomBar;
+
+  // Bắt sự kiện chọn ô trên lưới mini
+  $('#shelfModalBody [data-sm-cell]').forEach(b => b.onclick = () => {
+    const p = b.dataset.smCell.split('|');
+    shelfModalState = { ke: p[0], tang: +p[1], o: +p[2] };
+    renderShelfModal();
+  });
+
+  // Bắt sự kiện chọn tầng
+  $('#shelfModalBody [data-sm-floor]').forEach(b => b.onclick = () => {
+    const f = +b.dataset.smFloor;
+    shelfModalState.tang = f;
+    shelfModalState.o = 0;
+    renderShelfModal();
+  });
+
+  // Bắt sự kiện nhập/xuất trực tiếp từ từng thẻ vật tư
+  $('#shelfModalBody [data-sm-act-in]').forEach(b => b.onclick = () => {
+    const p = b.dataset.smActIn.split('|');
+    closeShelfModal();
+    go('NHAP', { ke: p[0], tang: +p[1], o: +p[2], ma: p[3] });
+  });
+
+  $('#shelfModalBody [data-sm-act-out]').forEach(b => b.onclick = () => {
+    const p = b.dataset.smActOut.split('|');
+    closeShelfModal();
+    go('XUAT', { ke: p[0], tang: +p[1], o: +p[2], ma: p[3] });
+  });
+
+  if ($('#smActEmptyIn')) $('#smActEmptyIn').onclick = () => {
+    closeShelfModal();
+    go('NHAP', { ke, tang: tang || 1, o: o || 1 });
+  };
+
+  if ($('#smBtnIn')) $('#smBtnIn').onclick = () => {
+    closeShelfModal();
+    go('NHAP', { ke, tang: tang || 1, o: o || 1 });
+  };
+
+  if ($('#smBtnOut')) $('#smBtnOut').onclick = () => {
+    closeShelfModal();
+    go('XUAT', { ke, tang: tang || 1, o: o || 1 });
+  };
+
+  if ($('#smBtnCount')) $('#smBtnCount').onclick = () => {
+    closeShelfModal();
+    go('KIEMKE', { ke, tang: tang || 1, o: o || 1 });
+  };
+
+  if ($('#smBtnPrint')) $('#smBtnPrint').onclick = () => {
+    printSingleSlotQr(ke, tang || 1, o || 1);
+  };
+
+  if ($('#smBtnClose')) $('#smBtnClose').onclick = closeShelfModal;
+}
+
+function printSingleSlotQr(ke, tang, o) {
+  if (typeof qrcode === 'undefined') { toast('Thư viện tạo mã QR chưa tải xong', 'err'); return; }
+  const slotCode = (tang && o) ? (ke + '-T' + tang + '-O' + o) : ke;
+  const qr = txt => { const q = qrcode(0, 'M'); q.addData(txt); q.make(); return q.createSvgTag({ cellSize: 4, margin: 2 }); };
+  const w = window.open('', '_blank');
+  if (!w) { toast('Trình duyệt đang chặn cửa sổ in — hãy cho phép mở popup', 'err'); return; }
+  const title = (tang && o) ? ('Nhãn vị trí ' + slotCode) : ('Nhãn kệ ' + ke);
+  const sub = (tang && o) ? ('Kệ ' + ke + ' · Tầng ' + tang + ' · Ô ' + o) : ('Kho Mũ TBS · 3 tầng × 4 ô');
+  const h = '<div class="pg" style="text-align:center;padding:12mm;font-family:Arial,sans-serif">' +
+    '<div style="font-size:16px;font-weight:700;color:#475569;margin-bottom:3mm">KHO MŨ TBS — VỊ TRÍ LƯU TRỮ</div>' +
+    '<div style="display:inline-block;padding:5mm;border:2.5px solid #000;border-radius:12px;margin-bottom:4mm">' + qr('KE:' + slotCode) + '</div>' +
+    '<div style="font-size:34px;font-weight:900;font-family:monospace;letter-spacing:1px">' + slotCode + '</div>' +
+    '<div style="font-size:16px;color:#333;margin-top:3mm;font-weight:700">' + sub + '</div>' +
+  '</div>';
+  w.document.write('<html><head><meta charset="utf-8"><title>' + title + '</title><style>@media print{@page{margin:0}}body{margin:0}</style></head><body>' + h + '<script>setTimeout(()=>print(),350)<\/script></body></html>');
+  w.document.close();
+}
+
+// Bắt sự kiện đóng modal khi bấm nút Đóng, phím Esc hoặc click vùng nền ngoài
+if ($('#shelfModalClose')) $('#shelfModalClose').onclick = closeShelfModal;
+if ($('#shelfModal')) $('#shelfModal').addEventListener('click', e => {
+  if (e.target === $('#shelfModal')) closeShelfModal();
+});
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const m = $('#shelfModal');
+    if (m && !m.hidden) closeShelfModal();
+  }
 });
 
 /* =====================================================================
