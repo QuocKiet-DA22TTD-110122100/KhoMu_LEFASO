@@ -526,6 +526,30 @@ section{animation:fadeUp .22s var(--ease)}
 .live-suggest-box[hidden]{display:none!important}
 
 /* Nút Camera GitHub trên Header & Trong Sắp Kệ */
+/* Nút Camera Floating ở góc đáy màn hình (FAB) */
+.fab-gh-cam{
+  position:fixed;bottom:24px;right:24px;z-index:999999;
+  display:inline-flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,#0d9488 0%,#0284c7 100%);
+  color:#ffffff!important;padding:12px 20px;border-radius:999px;
+  box-shadow:0 8px 24px rgba(13,148,136,.48), 0 2px 10px rgba(15,23,42,.25);
+  border:2.5px solid #ffffff;font-size:14px;font-weight:800;cursor:pointer;
+  user-select:none;transition:transform .16s ease, box-shadow .16s ease;
+  backdrop-filter:blur(8px);
+}
+.fab-gh-cam:hover{
+  transform:scale(1.06);box-shadow:0 12px 30px rgba(13,148,136,.6);
+  background:linear-gradient(135deg,#0f766e 0%,#0369a1 100%);
+}
+.fab-gh-cam:active{transform:scale(.95)}
+.fab-dot{
+  width:9px;height:9px;border-radius:50%;background:#34d399;
+  box-shadow:0 0 8px #34d399;animation:camPulse 1.8s infinite;
+}
+@media (max-width: 600px) {
+  .fab-gh-cam{bottom:76px;right:16px;padding:10px 16px;font-size:13px}
+}
+
 .btn-top-ghcam{
   display:inline-flex;align-items:center;gap:6px;
   background:linear-gradient(135deg,#0d9488 0%,#0284c7 100%);
@@ -1297,10 +1321,15 @@ section{animation:fadeUp .22s var(--ease)}
       <div class="panel-head"><h2 class="panel-title">In nhãn QR vị trí (26 kệ × 12 ô)</h2></div>
       <div class="small muted">Mỗi kệ in 1 trang A4 gồm 1 nhãn đầu kệ lớn và 12 nhãn ô (KE:K01-T1-O1 … KE:K01-T3-O4).</div>
       <div class="row" style="margin-top:10px">
-        <input class="inp" id="lblFrom" type="number" min="1" max="24" value="1" aria-label="Từ kệ">
+        <input class="inp" id="lblFrom" type="number" min="1" max="26" value="1" aria-label="Từ kệ">
         <span class="muted" style="flex:0 0 auto;font-weight:700">đến</span>
-        <input class="inp" id="lblTo" type="number" min="1" max="24" value="24" aria-label="Đến kệ">
+        <input class="inp" id="lblTo" type="number" min="1" max="26" value="26" aria-label="Đến kệ">
         <button type="button" class="btn btn-pri" id="btnPrint" style="flex:0 0 110px">In nhãn</button>
+      </div>
+      <div class="row wrap" style="margin-top:8px;gap:6px">
+        <button type="button" class="btn btn-pri btn-sm" id="btnPrintAll26" style="background:linear-gradient(135deg,#0d9488,#0284c7);font-weight:800">🖨️ In đủ toàn bộ 26 kệ (K01–K26)</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="btnPrintA">In Dãy A (K01–K13)</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="btnPrintB">In Dãy B (K14–K26)</button>
       </div>
     </div>
 
@@ -1358,6 +1387,10 @@ section{animation:fadeUp .22s var(--ease)}
   </div>
 </div>
 
+<button type="button" id="fabGhCam" class="fab-gh-cam" title="Mở Camera quét mã QR (GitHub Pages)">
+  <span class="fab-dot"></span>
+  <span>📷 Camera GitHub</span>
+</button>
 <nav class="bottom-nav" id="bottomNav" hidden aria-label="Điều hướng chính"></nav>
 <div id="toast" role="status" aria-live="polite"></div>
 <div class="flash" id="flash"></div>
@@ -1472,9 +1505,9 @@ function mountStaticIcons(){
   const NAV_ITEMS = [
     { id:'home', lbl:'Trang chủ', ico:'home' },
     { id:'NHAP', lbl:'Thao tác', ico:'scan' },
-    { id:'map',  lbl:'Sơ đồ kệ', ico:'map' },
-    { id:'find', lbl:'Tra cứu', ico:'search' },
-    { id:'settings', lbl:'Cài đặt', ico:'settings' }
+    { id:'ghCam', lbl:'Camera GH', ico:'camera', isCam:true },
+    { id:'map',  lbl:'Sơ đồ 26 kệ', ico:'map' },
+    { id:'find', lbl:'Tra cứu', ico:'search' }
   ];
   const navHtml = NAV_ITEMS.map(n => '<button type="button" data-nav="' + n.id + '">' + icon(n.ico) + '<span>' + n.lbl + '</span></button>').join('');
   $('#topNav').innerHTML = navHtml;
@@ -3991,9 +4024,12 @@ function renderShelfModal() {
                 '<label class="xs muted" style="font-weight:700">GHI CHÚ VỊ TRÍ MỚI (PX / CHUYỀN / NỢ)</label>' +
                 '<input type="text" class="inp" id="reloNote" placeholder="Ghi chú vị trí mới..." value="' + esc(curPoNote || '') + '">' +
               '</div>' +
-              '<div class="row" style="gap:8px;justify-content:flex-end">' +
+              '<div class="row wrap" style="gap:8px;justify-content:flex-end;margin-top:12px">' +
+                '<button type="button" class="btn btn-pri btn-sm" id="reloCamBottom" style="background:linear-gradient(135deg,#0d9488,#0284c7);gap:6px;font-weight:800">' +
+                  '📷 Quét Camera ô đích' +
+                '</button>' +
                 '<button type="button" class="btn btn-ghost btn-sm" id="reloCancel">Huỷ</button>' +
-                '<button type="button" class="btn btn-pri btn-sm" id="reloConfirm" style="background:linear-gradient(135deg,#0d9488,#0284c7)">' +
+                '<button type="button" class="btn btn-pri btn-sm" id="reloConfirm" style="background:#0f766e;font-weight:800">' +
                   '✔ Xác nhận xếp vào ô kệ mới' +
                 '</button>' +
               '</div>' +
@@ -4012,11 +4048,12 @@ function renderShelfModal() {
 
   // 4. Thanh nút hành động nhanh dưới chân popup
   let bottomBar = '<div class="row wrap" style="justify-content:space-between;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">' +
-    '<div class="row" style="gap:6px">' +
+    '<div class="row wrap" style="gap:6px">' +
+      '<button type="button" class="btn btn-pri btn-sm" id="smBtnCamBottom" style="background:linear-gradient(135deg,#0d9488,#0284c7);gap:6px;font-weight:800">📷 Mở Camera GitHub</button>' +
       '<button type="button" class="btn btn-pri btn-sm" id="smBtnIn">+ Nhập vào ô</button>' +
       '<button type="button" class="btn btn-ghost btn-sm" id="smBtnOut">− Xuất từ ô</button>' +
       '<button type="button" class="btn btn-ghost btn-sm" id="smBtnCount">Kiểm kê ô</button>' +
-      '<button type="button" class="btn btn-ghost btn-sm" id="smBtnPrint">📷 In tem QR vị trí</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" id="smBtnPrint">🖨️ In tem QR vị trí</button>' +
     '</div>' +
     '<button type="button" class="btn btn-ghost btn-sm" id="smBtnClose">Đóng</button>' +
   '</div>';
@@ -5135,6 +5172,41 @@ window.addEventListener('offline', () => { online = false; renderSync(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) camStop(); else { flush(); pull(); if (view === 'NHAP' || view === 'XUAT' || view === 'KIEMKE') flowStep(F.step); } });
 setInterval(() => { if (Q.length) flush(); }, 5000);
 setInterval(() => { if (view === 'home' || view === 'map' || view === 'find') pull(); }, 60000);
+
+if ($('#fabGhCam')) {
+  $('#fabGhCam').onclick = () => openGithubCameraBridge();
+}
+if ($('#btnPrintAll26')) {
+  $('#btnPrintAll26').onclick = () => {
+    $('#lblFrom').value = 1;
+    $('#lblTo').value = 26;
+    $('#btnPrint').click();
+  };
+}
+if ($('#btnPrintA')) {
+  $('#btnPrintA').onclick = () => {
+    $('#lblFrom').value = 1;
+    $('#lblTo').value = 13;
+    $('#btnPrint').click();
+  };
+}
+if ($('#btnPrintB')) {
+  $('#btnPrintB').onclick = () => {
+    $('#lblFrom').value = 14;
+    $('#lblTo').value = 26;
+    $('#btnPrint').click();
+  };
+}
+
+// Bắt sự kiện khi bấm tab Camera GH ở thanh Bottom Nav
+const origGo = go;
+$$('#bottomNav [data-nav="ghCam"]').forEach(b => {
+  b.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openGithubCameraBridge();
+  };
+});
 
 if ($('#btnTopGhCam')) {
   const isGh = isGithubCamHost();
