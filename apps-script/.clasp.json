@@ -3,8 +3,8 @@
   "rootDir": "",
   "parentId": "1WKcMvsICUykeBX6qbbGoFc95BOaBw23FyICPv5qR0Sc",
   "scriptExtensions": [
-    ".js",
-    ".gs"
+    ".gs",
+    ".js"
   ],
   "htmlExtensions": [
     ".html"

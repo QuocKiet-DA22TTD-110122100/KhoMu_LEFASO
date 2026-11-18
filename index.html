@@ -120,9 +120,29 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   display:flex;flex-direction:column;gap:6px;
 }
 .side-user{font-size:12px;color:var(--muted);padding:4px 8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.side-nav.collapsed{width:76px;flex:0 0 76px;padding:16px 8px}
-.side-nav.collapsed .brand-txt,.side-nav.collapsed .side-grp,.side-nav.collapsed .side-btn span,.side-nav.collapsed .side-badge,.side-nav.collapsed .side-user{display:none}
-.side-nav.collapsed .side-head,.side-nav.collapsed .side-btn{justify-content:center;padding-left:0;padding-right:0}
+.side-btn-logout{
+  display:flex;align-items:center;gap:11px;width:100%;min-height:42px;padding:9px 12px;
+  border-radius:12px;font-size:13.5px;font-weight:700;color:#e11d48;background:transparent;
+  border:1px solid #fecdd3;text-align:left;cursor:pointer;transition:all .15s var(--ease);
+}
+.side-btn-logout:hover{
+  background:#fff1f2;border-color:#fda4af;color:#be123c;
+}
+.side-btn-logout .ico svg{width:18px;height:18px}
+.btn-top-logout{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:10px;
+  border:1px solid #fecdd3;background:#fff1f2;color:#be123c;font-size:12.5px;font-weight:700;
+  cursor:pointer;transition:all .15s;flex-shrink:0;margin-left:auto;
+}
+.btn-top-logout:hover{
+  background:#ffe4e6;border-color:#fb7185;transform:translateY(-1px);
+  box-shadow:0 3px 8px rgba(225,29,72,.15);
+}
+.btn-top-logout .ico svg{width:15px;height:15px}
+@media(max-width:640px){
+  .btn-top-logout span:not(.ico){display:none}
+  .btn-top-logout{padding:7px 9px}
+}
 
 .app-header{
   position:sticky;top:0;z-index:40;
@@ -796,6 +816,90 @@ section{animation:fadeUp .22s var(--ease)}
 }
 .modal-head{font-size:16px;font-weight:800;margin-bottom:12px;color:var(--ink)}
 
+/* Custom Confirm Modal Hiện Đại */
+.app-confirm-backdrop{
+  position:fixed;inset:0;z-index:999;background:rgba(15,23,42,.72);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;padding:16px;
+  animation:cfmFadeIn .18s ease-out;
+}
+.app-confirm-card{
+  background:#fff;border-radius:22px;
+  box-shadow:0 25px 60px -15px rgba(15,23,42,.35),0 0 0 1px rgba(15,23,42,.08);
+  width:100%;max-width:480px;overflow:hidden;
+  animation:cfmPopIn .22s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes cfmFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes cfmPopIn{
+  from{opacity:0;transform:scale(0.93) translateY(8px)}
+  to{opacity:1;transform:scale(1) translateY(0)}
+}
+.app-confirm-head{
+  padding:20px 22px 16px;display:flex;align-items:flex-start;gap:14px;
+  border-bottom:1px solid var(--line);position:relative;background:#fff;
+}
+.app-confirm-ico-box{
+  width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-size:24px;flex-shrink:0;background:linear-gradient(135deg,#f0fdfa 0%,#e0f2fe 100%);
+  border:1.5px solid #ccfbf1;box-shadow:0 2px 8px rgba(13,148,136,.12);
+}
+.app-confirm-ico-box.warn{
+  background:linear-gradient(135deg,#fffbeb 0%,#ffedd5 100%);border-color:#fde68a;
+  box-shadow:0 2px 8px rgba(217,119,6,.15);
+}
+.app-confirm-ico-box.danger{
+  background:linear-gradient(135deg,#fff1f2 0%,#ffe4e6 100%);border-color:#fecdd3;
+  box-shadow:0 2px 8px rgba(225,29,72,.15);
+}
+.app-confirm-title-area{flex:1;padding-right:26px}
+.app-confirm-title{font-size:18px;font-weight:800;color:var(--ink);line-height:1.25}
+.app-confirm-sub{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.4}
+.app-confirm-close{
+  position:absolute;top:16px;right:16px;background:transparent;border:none;
+  font-size:17px;color:var(--muted);cursor:pointer;width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;line-height:1;
+}
+.app-confirm-close:hover{background:var(--slate-100);color:var(--ink)}
+.app-confirm-body{
+  padding:20px 22px;font-size:14px;color:var(--ink-2);line-height:1.55;
+  max-height:68vh;overflow-y:auto;
+}
+.app-confirm-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.app-confirm-stat{
+  background:var(--slate-50);border:1px solid var(--line);border-radius:14px;
+  padding:12px 14px;text-align:center;
+}
+.app-confirm-stat-val{
+  font-size:24px;font-weight:800;color:var(--brand);font-family:var(--font-mono,monospace);line-height:1.1;
+}
+.app-confirm-stat-lbl{font-size:12px;color:var(--muted);font-weight:700;margin-top:4px}
+.app-confirm-alert{
+  border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.5;
+  margin-bottom:12px;display:flex;align-items:flex-start;gap:10px;
+}
+.app-confirm-alert.warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.app-confirm-alert.info{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.app-confirm-prompt{font-size:14.5px;font-weight:700;color:var(--ink);text-align:center;margin-top:14px}
+.app-confirm-foot{
+  padding:14px 22px 18px;background:var(--slate-50);border-top:1px solid var(--line);
+  display:flex;justify-content:flex-end;gap:10px;
+}
+.app-confirm-btn{
+  padding:10px 20px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;
+  transition:all .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+}
+.app-confirm-btn.cancel{background:#fff;border:1px solid var(--line-strong);color:var(--ink-2)}
+.app-confirm-btn.cancel:hover{background:var(--slate-100);border-color:var(--slate-500)}
+.app-confirm-btn.ok{
+  background:linear-gradient(135deg,#0d9488 0%,#0284c7 100%);border:none;color:#fff;
+  box-shadow:0 4px 12px rgba(13,148,136,.3);
+}
+.app-confirm-btn.ok:hover{box-shadow:0 6px 18px rgba(13,148,136,.45);transform:translateY(-1px)}
+.app-confirm-btn.danger{
+  background:linear-gradient(135deg,#e11d48 0%,#be123c 100%);box-shadow:0 4px 12px rgba(225,29,72,.3);
+}
+.app-confirm-btn.danger:hover{box-shadow:0 6px 18px rgba(225,29,72,.45);transform:translateY(-1px)}
+
 
 /* Ghi chú ô kệ & Chuyền may / Phân xưởng */
 .cell.has-note{position:relative}
@@ -846,9 +950,9 @@ section{animation:fadeUp .22s var(--ease)}
     <div class="side-menu" id="sideMenu"></div>
     <div class="side-foot">
       <div class="side-user" id="sideUser">Quản trị</div>
-      <button type="button" class="side-btn" id="btnToggleSide" title="Thu gọn hoặc mở rộng thanh bên">
-        <span class="ico" id="sideToggleIco"></span>
-        <span>Thu gọn menu</span>
+      <button type="button" class="side-btn side-btn-logout" id="sideBtnLogout" title="Đăng xuất khỏi hệ thống">
+        <span class="ico" id="sideLogoutIco"></span>
+        <span>Đăng xuất</span>
       </button>
     </div>
   </aside>
@@ -870,6 +974,10 @@ section{animation:fadeUp .22s var(--ease)}
           <span>📷 Camera GitHub</span>
         </button>
         <div class="sync-pill demo" id="sync" hidden><span class="dot"></span><span id="syncTxt">Chế độ thử</span></div>
+        <button type="button" class="btn-top-logout" id="topBtnLogout" title="Đăng xuất khỏi hệ thống" hidden>
+          <span class="ico" id="topLogoutIco"></span>
+          <span>Đăng xuất</span>
+        </button>
       </div>
     </header>
 
@@ -1369,6 +1477,30 @@ section{animation:fadeUp .22s var(--ease)}
     </div>
   </div>
 
+  <!-- CỬA SỔ XÁC NHẬN ĐẸP (CUSTOM CONFIRM DIALOG) -->
+  <div id="appConfirmModal" hidden class="app-confirm-backdrop" role="dialog" aria-modal="true" aria-labelledby="appConfirmTitle">
+    <div class="app-confirm-card">
+      <div class="app-confirm-head">
+        <div class="app-confirm-ico-box" id="appConfirmIcoBox">
+          <span id="appConfirmIco">☁️</span>
+        </div>
+        <div class="app-confirm-title-area">
+          <div class="app-confirm-title" id="appConfirmTitle">Xác nhận đồng bộ</div>
+          <div class="app-confirm-sub" id="appConfirmSub">Hệ thống chuẩn bị lưu dữ liệu lên Google Sheet</div>
+        </div>
+        <button type="button" class="app-confirm-close" id="appConfirmCloseBtn" title="Đóng cửa sổ" aria-label="Đóng">✕</button>
+      </div>
+      <div class="app-confirm-body" id="appConfirmBody"></div>
+      <div class="app-confirm-foot">
+        <button type="button" class="app-confirm-btn cancel" id="appConfirmCancelBtn">Hủy bỏ</button>
+        <button type="button" class="app-confirm-btn ok" id="appConfirmOkBtn">
+          <span class="ico">✓</span>
+          <span id="appConfirmOkText">Xác nhận lưu</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- CỬA SỔ CHI TIẾT Ô & KỆ (MODAL POPUP CHO SƠ ĐỒ KỆ) -->
   <div id="shelfModal" hidden class="lb-modal" role="dialog" aria-modal="true" aria-labelledby="shelfModalTitle">
     <div class="lb-dialog shelf-dialog">
@@ -1451,14 +1583,16 @@ const ICONS = {
   'database': '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>',
   'wifi': '<path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>',
   'trash': '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
-  'edit': '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>'
+  'edit': '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+  'logout': '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>'
 };
 const icon = name => '<span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[name] || '') + '</svg></span>';
 
 function mountStaticIcons(){
   $('#brandLogo').innerHTML = icon('logo');
   if ($('#sideLogo')) $('#sideLogo').innerHTML = icon('logo');
-  if ($('#sideToggleIco')) $('#sideToggleIco').innerHTML = icon('arrow-left');
+  if ($('#sideLogoutIco')) $('#sideLogoutIco').innerHTML = icon('logout');
+  if ($('#topLogoutIco')) $('#topLogoutIco').innerHTML = icon('logout');
   $('#loginLogo').innerHTML = icon('logo');
   $('#btnBack').innerHTML = icon('arrow-left');
   $('#demoNoteIco').innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICONS.alert + '</svg>';
@@ -1496,11 +1630,8 @@ function mountStaticIcons(){
       '</button>').join('')
     ).join('');
   }
-  if ($('#btnToggleSide')) {
-    $('#btnToggleSide').onclick = () => {
-      $('#sideNav').classList.toggle('collapsed');
-    };
-  }
+  if ($('#sideBtnLogout')) $('#sideBtnLogout').onclick = doLogout;
+  if ($('#topBtnLogout')) $('#topBtnLogout').onclick = doLogout;
 
   const NAV_ITEMS = [
     { id:'home', lbl:'Trang chủ', ico:'home' },
@@ -1591,6 +1722,77 @@ function toast(msg, kind){
   const f = $('#flash'); if (kind) { f.className = 'flash ' + kind; setTimeout(() => f.className = 'flash', 180); }
 }
 
+/* ---------------------- Cửa sổ xác nhận tùy biến (Custom Confirm) ---------------------- */
+function uiConfirm(opts){
+  return new Promise(resolve => {
+    let cfg = {};
+    if (typeof opts === 'string') {
+      cfg = { message: opts };
+    } else {
+      cfg = opts || {};
+    }
+
+    const modal = $('#appConfirmModal');
+    if (!modal) {
+      resolve(confirm(cfg.message || ''));
+      return;
+    }
+
+    const titleEl = $('#appConfirmTitle');
+    const subEl = $('#appConfirmSub');
+    const icoBox = $('#appConfirmIcoBox');
+    const icoEl = $('#appConfirmIco');
+    const bodyEl = $('#appConfirmBody');
+    const okBtn = $('#appConfirmOkBtn');
+    const okTextEl = $('#appConfirmOkText');
+    const cancelBtn = $('#appConfirmCancelBtn');
+    const closeBtn = $('#appConfirmCloseBtn');
+
+    titleEl.textContent = cfg.title || 'Xác nhận';
+    if (cfg.sub) {
+      subEl.textContent = cfg.sub;
+      subEl.style.display = 'block';
+    } else {
+      subEl.style.display = 'none';
+    }
+
+    icoBox.className = 'app-confirm-ico-box' + (cfg.type === 'danger' ? ' danger' : (cfg.type === 'warn' ? ' warn' : ''));
+    icoEl.textContent = cfg.icon || (cfg.type === 'danger' ? '⚠️' : (cfg.type === 'warn' ? '🔔' : '☁️'));
+
+    if (cfg.html) {
+      bodyEl.innerHTML = cfg.html;
+    } else {
+      bodyEl.innerHTML = '<div style="white-space:pre-line;line-height:1.6">' + esc(cfg.message || '') + '</div>';
+    }
+
+    okBtn.className = 'app-confirm-btn ok' + (cfg.type === 'danger' ? ' danger' : '');
+    okTextEl.textContent = cfg.okText || 'Đồng ý';
+    cancelBtn.textContent = cfg.cancelText || 'Hủy bỏ';
+
+    modal.hidden = false;
+
+    let isDone = false;
+    function cleanup(result){
+      if (isDone) return;
+      isDone = true;
+      modal.hidden = true;
+      window.removeEventListener('keydown', onKey);
+      resolve(result);
+    }
+
+    function onKey(e){
+      if (e.key === 'Escape') cleanup(false);
+      else if (e.key === 'Enter' && !e.shiftKey) cleanup(true);
+    }
+
+    okBtn.onclick = () => cleanup(true);
+    cancelBtn.onclick = () => cleanup(false);
+    closeBtn.onclick = () => cleanup(false);
+    modal.onclick = (e) => { if (e.target === modal) cleanup(false); };
+    window.addEventListener('keydown', onKey);
+  });
+}
+
 /* ---------------------- Giao tiếp Server & Hàng đợi Offline ---------------------- */
 async function post(action, payload){
   const bodyObj = Object.assign({
@@ -1624,6 +1826,23 @@ async function post(action, payload){
 function sessionExpired(){
   toast('Phiên đăng nhập hết hạn — đăng nhập lại (dữ liệu chờ vẫn giữ)', 'err');
   SESS = null; save(LS.sess, null); go('login');
+}
+
+async function doLogout(){
+  if (Q && Q.length) {
+    const ok = await uiConfirm({
+      title: 'Xác nhận đăng xuất',
+      sub: 'Đang có thao tác chưa đồng bộ trong hàng đợi',
+      icon: '🚪',
+      type: 'warn',
+      message: 'Còn ' + Q.length + ' thao tác chưa gửi lên Google Sheet. Bạn có chắc vẫn muốn đăng xuất?\n(Dữ liệu chờ vẫn được lưu giữ an toàn trên máy này)',
+      okText: 'Vẫn đăng xuất',
+      cancelText: 'Ở lại'
+    });
+    if (!ok) return;
+  }
+  SESS = null; save(LS.sess, null); go('login');
+  toast('Đã đăng xuất tài khoản', 'ok');
 }
 
 function localSync(ops){
@@ -1969,6 +2188,7 @@ function go(v, arg){
   const loggedIn = !!SESS && v !== 'login';
   if ($('#sideNav')) $('#sideNav').hidden = !loggedIn;
   if ($('#sideUser') && SESS) $('#sideUser').textContent = SESS.user.ten + ' · ' + SESS.user.vaiTro;
+  if ($('#topBtnLogout')) $('#topBtnLogout').hidden = !loggedIn;
   $('#topNav').hidden = !loggedIn;
   $('#bottomNav').hidden = !loggedIn;
   $('#btnBack').hidden = v === 'home' || v === 'login';
@@ -2233,6 +2453,13 @@ function renderQty(){
         '</div>' +
         '<input type="text" class="inp" id="qtyNote" placeholder="Ghi chú (VD: Chuyền 3 PX A2, Giao thiếu 50 đôi nợ bù...)" value="">' +
       '</div>' +
+            '<div class="grid-2" style="margin:8px 0">' +
+        '<select class="inp" id="qtyChuyen"><option value="">Chuyền may</option>' +
+          [1,2,3,4,5,6,7,8].map(n => '<option value="' + n + '">Chuyền ' + n + '</option>').join('') + '</select>' +
+        '<select class="inp" id="qtyPx"><option value="">Phân xưởng</option>' +
+          ['A1','A2','B1','B2'].map(p => '<option value="' + p + '">PX ' + p + '</option>').join('') + '</select>' +
+      '</div>' +
+      '<input type="number" class="inp" id="qtyThieu" min="0" inputmode="numeric" placeholder="Còn thiếu bao nhiêu đôi? (bỏ trống nếu đủ)" style="margin-bottom:10px">' +
       '<div class="qty-pad">' +
         '<button type="button" data-d="-10">−10</button><button type="button" data-d="-5">−5</button><button type="button" data-d="-1">−1</button><button type="button" data-d="1">+1</button>' +
         '<button type="button" data-d="5">+5</button><button type="button" data-d="10">+10</button><button type="button" data-d="20">+20</button><button type="button" data-d="50">+50</button>' +
@@ -2266,7 +2493,18 @@ function saveQty(){
     const have = (cellItems(F.loc).find(r => r.maVT === F.ma) || {}).soLuong || 0;
     if (sl > have) { beep(false); toast('Ô chỉ còn ' + fmt(have) + ' — không xuất quá tồn', 'err'); return; }
   }
-  const flowNote = ($('#qtyNote') ? $('#qtyNote').value.trim() : '');
+    const noteRaw = ($('#qtyNote') ? $('#qtyNote').value.trim() : '');
+  const ch = $('#qtyChuyen') ? $('#qtyChuyen').value : '';
+  const px = $('#qtyPx') ? $('#qtyPx').value : '';
+  const th = parseInt($('#qtyThieu') ? $('#qtyThieu').value : '', 10) || 0;
+  const parts = noteRaw ? [noteRaw] : [];
+  if (ch && !/Chuy[eêề]n\s*\d/i.test(noteRaw)) parts.push('Chuyền ' + ch);
+  if (px && !/PX\s*[A-Z]\d/i.test(noteRaw)) parts.push('PX ' + px);
+  if (th) parts.push('Thiếu ' + th + ' đôi');
+  const flowNote = parts.join(' · ');
+  if (F.mode === 'XUAT' && !/Chuy[eêề]n\s*\d/i.test(flowNote)) {
+    beep(false); toast('Chọn chuyền may nhận hàng trước khi xuất', 'err'); return;
+  }
   enqueue({ loai: F.mode, ke: F.loc.ke, tang: F.loc.tang, o: F.loc.o, maVT: F.ma, soLuong: sl, ghiChu: flowNote });
   if (flowNote) {
     const locKey = F.loc.ke + '-T' + F.loc.tang + '-O' + F.loc.o;
@@ -3298,13 +3536,38 @@ async function saveReconBatchToSheet(){
     return;
   }
 
-  let confirmMsg = 'Chuẩn bị đồng bộ ' + ops.length + ' thao tác (thuộc ' + candidates.length + ' mã mũ) lên Google Sheet.\n';
-  if (noShelfAssignedCount > 0) {
-    confirmMsg += '• Có ' + noShelfAssignedCount + ' dòng chưa ghi kệ được quy hoạch tạm vào Ô ' + defLocVal + '.\n';
-  }
-  confirmMsg += 'Sau khi đồng bộ, Google Sheet và App sẽ khớp 100% với File đối chiếu. Bạn có chắc chắn muốn lưu?';
+  const statsHtml =
+    '<div class="app-confirm-stats">' +
+      '<div class="app-confirm-stat">' +
+        '<div class="app-confirm-stat-val">' + fmt(ops.length) + '</div>' +
+        '<div class="app-confirm-stat-lbl">Thao tác đồng bộ</div>' +
+      '</div>' +
+      '<div class="app-confirm-stat">' +
+        '<div class="app-confirm-stat-val">' + fmt(candidates.length) + '</div>' +
+        '<div class="app-confirm-stat-lbl">Mã mũ cập nhật</div>' +
+      '</div>' +
+    '</div>' +
+    (noShelfAssignedCount > 0 ?
+      '<div class="app-confirm-alert warn">' +
+        '<span style="font-size:18px;line-height:1">⚠️</span>' +
+        '<div>Có <b>' + fmt(noShelfAssignedCount) + ' dòng</b> chưa ghi kệ được quy hoạch tạm vào <b>Ô ' + esc(defLocVal) + '</b>.</div>' +
+      '</div>' : '') +
+    '<div class="app-confirm-alert info">' +
+      '<span style="font-size:18px;line-height:1">✅</span>' +
+      '<div>Sau khi đồng bộ, Google Sheet và App sẽ khớp <b>100%</b> với File đối chiếu.</div>' +
+    '</div>' +
+    '<div class="app-confirm-prompt">Bạn có chắc chắn muốn lưu dữ liệu lên Google Sheet?</div>';
 
-  if (!confirm(confirmMsg)) return;
+  const ok = await uiConfirm({
+    title: 'Xác nhận đồng bộ Google Sheet',
+    sub: 'Hệ thống chuẩn bị ghi nhận dữ liệu đối chiếu vào Google Sheet',
+    icon: '☁️',
+    type: 'info',
+    html: statsHtml,
+    okText: 'Xác nhận & Đồng bộ',
+    cancelText: 'Hủy bỏ'
+  });
+  if (!ok) return;
 
   // Mở modal tiến trình
   showReconProgress(true, 'Đang đồng bộ dữ liệu lên Google Sheet...', 0, ops.length);
@@ -4848,7 +5111,16 @@ function renderCatalog(){
   });
   $('#catList').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
     const ma = b.dataset.del;
-    if (!confirm('Xoá mã ' + ma + ' khỏi danh mục?')) return;
+    const ok = await uiConfirm({
+      title: 'Xóa mã mũ khỏi danh mục',
+      sub: 'Hành động này sẽ xóa mã khỏi danh mục vật tư',
+      icon: '🗑️',
+      type: 'danger',
+      message: 'Bạn có chắc chắn muốn xoá mã ' + ma + ' khỏi danh mục?',
+      okText: 'Xoá mã',
+      cancelText: 'Hủy'
+    });
+    if (!ok) return;
     try {
       if (API) { const r = await post('deleteItem', { ma }); K = r.kho; }
       else {
@@ -5092,7 +5364,16 @@ $('#btnSeedSample').onclick = async () => {
 };
 
 $('#btnClearSample').onclick = async () => {
-  if (!confirm('Xoá sạch toàn bộ tồn kho và nhật ký? (Giữ nguyên 26 kệ và tài khoản)')) return;
+  const ok = await uiConfirm({
+    title: 'Xác nhận xóa dữ liệu mẫu',
+    sub: 'Thao tác sẽ đưa kho về trạng thái sạch ban đầu',
+    icon: '⚠️',
+    type: 'danger',
+    message: 'Xoá sạch toàn bộ tồn kho và nhật ký?\n(Hệ thống vẫn giữ nguyên danh mục 26 kệ và tài khoản người dùng)',
+    okText: 'Xoá dữ liệu',
+    cancelText: 'Hủy bỏ'
+  });
+  if (!ok) return;
   try {
     localStorage.setItem('km.cleared', '1');
     if (API) { const r = await post('clearSample'); K = r.kho; }
@@ -5101,10 +5382,7 @@ $('#btnClearSample').onclick = async () => {
   } catch (e) { toast(e.message, 'err'); }
 };
 
-$('#btnLogout').onclick = () => {
-  if (Q.length && !confirm('Còn ' + Q.length + ' thao tác chưa gửi. Vẫn đăng xuất? (Dữ liệu chờ vẫn giữ trên máy)')) return;
-  SESS = null; save(LS.sess, null); go('login');
-};
+if ($('#btnLogout')) $('#btnLogout').onclick = doLogout;
 
 async function loadUsers(){
   try {

@@ -33,9 +33,12 @@ function getArgValue(args, flag) {
  * Kiem tra cu phap Code.gs + JS inline trong docs/index.html va dong bo docs/index.html -> index.html.
  */
 function checkAndSync() {
-  const gsCode = fs.readFileSync(CODE_GS_PATH, 'utf8');
-  new vm.Script(gsCode, { filename: 'apps-script/Code.gs' });
-  console.log('[OK] Cu phap hop le: apps-script/Code.gs');
+  const gsFiles = fs.readdirSync(GAS_DIR).filter(f => f.endsWith('.gs') || (f.endsWith('.js') && f !== 'appsscript.json'));
+  gsFiles.forEach(f => {
+    const code = fs.readFileSync(path.join(GAS_DIR, f), 'utf8');
+    new vm.Script(code, { filename: `apps-script/${f}` });
+    console.log(`[OK] Cu phap hop le: apps-script/${f}`);
+  });
 
   const html = fs.readFileSync(DOCS_INDEX_PATH, 'utf8');
   const scriptMatches = [...html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)];
@@ -57,7 +60,7 @@ function writeClaspConfig(scriptId, parentId) {
   const cfg = {
     scriptId,
     rootDir: '',
-    scriptExtensions: ['.js', '.gs'],
+    scriptExtensions: ['.gs', '.js'],
     htmlExtensions: ['.html'],
     jsonExtensions: ['.json'],
     filePushOrder: [],

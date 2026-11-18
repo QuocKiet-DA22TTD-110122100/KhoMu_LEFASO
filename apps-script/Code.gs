@@ -41,7 +41,12 @@ function onOpen() {
       .addItem('6. Xoá sạch dữ liệu mẫu (giữ kệ & tài khoản)', 'clearSampleData')
       .addSeparator()
       .addItem('7. Reset mật khẩu admin về 123456', 'resetAdminPassword')
-      .addToUi();
+      .addToUi()
+      .addSeparator()
+      .addItem('8. Zalo: Dán token bot', 'zaloCaiToken')
+      .addItem('9. Zalo: Lấy Chat ID nhóm', 'zaloLayChatId')
+      .addItem('10. Zalo: Gửi tin thử', 'zaloKiemTra')
+      .addItem('11. Zalo: Bật báo cáo thiếu 17:00 hàng ngày', 'zaloBatTrigger');
   } catch (e) {}
 }
 
@@ -433,10 +438,11 @@ function doPost(e) {
   } catch (err) {
     const errMsg = String(err && err.message || err);
     return jsonResponse({ ok: false, status: 'error', error: errMsg, message: errMsg });
-  } finally {
+    } finally {
     if (!isReadOnly) {
       try { lock.releaseLock(); } catch (releaseErr) {}
     }
+    try { zaloFlush_(); } catch (zErr) {}
   }
 }
 
@@ -704,7 +710,11 @@ function applyOps_(ops, user) {
         }
       } else if (loai === 'XUAT') {
         if (sl <= 0) throw new Error('Số lượng phải > 0');
-        if (sl > cur) throw new Error('Ô ' + ke + '-T' + tang + '-O' + o + ' chỉ còn ' + cur + ' ' + ma);
+                if (sl > cur) {
+          zaloQueue_({ loai: 'XUAT_THIEU', ke: ke, tang: tang, o: o, ma: ma, sl: sl, cur: cur,
+                       note: op.ghiChu || '', userMa: (user && user.ma) || 'kho', time: now });
+          throw new Error('Ô ' + ke + '-T' + tang + '-O' + o + ' chỉ còn ' + cur + ' ' + ma);
+        }
         next = cur - sl; delta = -sl;
       } else if (loai === 'KIEMKE') {
         if (sl < 0) throw new Error('Số đếm không hợp lệ');
@@ -728,7 +738,11 @@ function applyOps_(ops, user) {
       if (idx > 0) { stock[idx][4] = next; stock[idx][5] = now; stockChanged = true; }
       else if (next > 0) { stock.push([ke, tang, o, ma, next, now]); stockChanged = true; }
 
-      newLogs.push([now, loai, ke, tang, o, ma, delta, (user && user.ma) || 'kho', note, txId]);
+      let tongMa = 0;
+      for (let i = 1; i < stock.length; i++) if (code_(stock[i][3]) === ma) tongMa += Number(stock[i][4]) || 0;
+      zaloQueue_({ loai: loai, ke: ke, tang: tang, o: o, ma: ma, sl: Math.abs(delta), delta: delta,
+                   cur: cur, next: next, tongMa: tongMa, note: note,
+                   userMa: (user && user.ma) || 'kho', time: now });
       doneIds[txId] = true;
       results.push({ id: txId, ok: true, soLuong: next });
     } catch (err) {
