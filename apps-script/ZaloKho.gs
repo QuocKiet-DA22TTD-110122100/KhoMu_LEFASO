@@ -11,8 +11,27 @@ const ZALO = {
 var ZALO_QUEUE_ = [];   // sự kiện chờ gửi trong 1 lần chạy
 
 /* ---------- Cấu hình (chạy từ menu) ---------- */
-function zaloCaiToken() {
-  const ui = SpreadsheetApp.getUi();
+function zaloUi_() {
+  try { return SpreadsheetApp.getUi(); } catch (e) { return null; }
+}
+
+function zaloNotify_(msg) {
+  const ui = zaloUi_();
+  if (ui) ui.alert(msg);
+  else Logger.log(msg);
+  return msg;
+}
+
+function zaloCaiToken(tokenInput) {
+  const token = typeof tokenInput === 'string' ? tokenInput.trim() : '';
+  if (token) {
+    PropertiesService.getScriptProperties().setProperty('ZALO_BOT_TOKEN', token);
+    return zaloNotify_('Đã lưu token. Hãy nhắn 1 tin vào nhóm/bot rồi chạy "Lấy Chat ID".');
+  }
+  const ui = zaloUi_();
+  if (!ui) {
+    return zaloNotify_('Chưa có hộp thoại nhập token khi chạy từ Apps Script Editor. Hãy mở Google Sheet → menu "Kho Mũ TBS → 8. Zalo: Dán token bot" hoặc thêm ZALO_BOT_TOKEN trong Cài đặt dự án → Thuộc tính tập lệnh.');
+  }
   const r = ui.prompt('Zalo Bot', 'Dán ZALO_BOT_TOKEN:', ui.ButtonSet.OK_CANCEL);
   if (r.getSelectedButton() !== ui.Button.OK || !r.getResponseText().trim()) return;
   PropertiesService.getScriptProperties().setProperty('ZALO_BOT_TOKEN', r.getResponseText().trim());
@@ -32,27 +51,50 @@ function zaloLayChatId() {
     const c = u.message && u.message.chat;
     return c ? (c.id + ' (' + (c.chat_type || c.type || '') + ')') : '';
   }).filter(Boolean);
-  if (!ids.length) { SpreadsheetApp.getUi().alert('Chưa có tin nhắn mới. Nhắn vào nhóm rồi chạy lại.\n' + res.getContentText().slice(0, 300)); return; }
+  if (!ids.length) return zaloNotify_('Chưa có tin nhắn mới. Nhắn vào nhóm rồi chạy lại.\n' + res.getContentText().slice(0, 300));
   const first = ids[0].split(' ')[0];
   PropertiesService.getScriptProperties().setProperty('ZALO_GROUP_CHAT_ID', first);
-  SpreadsheetApp.getUi().alert('Đã lưu ZALO_GROUP_CHAT_ID = ' + first + (ids.length > 1 ? '\nCác ID khác: ' + ids.slice(1).join(', ') : ''));
+  return zaloNotify_('Đã lưu ZALO_GROUP_CHAT_ID = ' + first + (ids.length > 1 ? '\nCác ID khác: ' + ids.slice(1).join(', ') : ''));
 }
 
-function zaloCaiLink() {
-  const ui = SpreadsheetApp.getUi();
+function zaloCaiLink(customUrl) {
+  const execRe = /^https:\/\/script\.google\.com\/(?:a\/macros\/[^/\s]+|macros)\/s\/[^/\s]+\/exec(?:\?.*)?$/i;
+  const props = PropertiesService.getScriptProperties();
+
+  if (typeof customUrl === 'string') {
+    const urlArg = customUrl.trim();
+    if (!urlArg) {
+      props.deleteProperty('ZALO_APP_URL');
+      return zaloNotify_('Đã khôi phục đường link mặc định: ' + (zaloWebAppUrl_() || '(chưa có)'));
+    }
+    if (!execRe.test(urlArg)) {
+      return zaloNotify_('Đường link không hợp lệ. Phải là link Apps Script Web App kết thúc bằng /exec.');
+    }
+    props.setProperty('ZALO_APP_URL', urlArg);
+    return zaloNotify_('Đã lưu đường link thông báo Zalo:\n' + urlArg);
+  }
+
+  const ui = zaloUi_();
   const cur = zaloWebAppUrl_();
+  if (!ui) {
+    if (cur) {
+      props.setProperty('ZALO_APP_URL', cur);
+      return zaloNotify_('Đã lưu ZALO_APP_URL = ' + cur + '\n(Để nhập link khác bằng hộp thoại: mở Google Sheet → menu "Kho Mũ TBS → 12. Zalo: Cài đường link Web App (/exec)", hoặc sửa Thuộc tính tập lệnh ZALO_APP_URL).');
+    }
+    return zaloNotify_('Chưa có đường link Web App (/exec). Hãy mở Google Sheet → menu "Kho Mũ TBS → 12. Zalo: Cài đường link Web App (/exec)" hoặc cấu hình ZALO_APP_URL trong Thuộc tính tập lệnh.');
+  }
+
   const r = ui.prompt('Zalo Bot — Đường link Web App',
     'Dán link Web App Apps Script (/exec) để gắn vào cuối thông báo Zalo.\nĐể trống rồi bấm OK để dùng link mặc định.\nHiện tại: ' + (cur || '(chưa có)'),
     ui.ButtonSet.OK_CANCEL);
   if (r.getSelectedButton() !== ui.Button.OK) return;
   const url = r.getResponseText().trim();
-  const props = PropertiesService.getScriptProperties();
   if (!url) {
     props.deleteProperty('ZALO_APP_URL');
     ui.alert('Đã khôi phục đường link mặc định: ' + (zaloWebAppUrl_() || '(chưa có)'));
     return;
   }
-  if (!/^https:\/\/script\.google\.com\/(?:a\/macros\/[^/\s]+|macros)\/s\/[^/\s]+\/exec(?:\?.*)?$/i.test(url)) {
+  if (!execRe.test(url)) {
     ui.alert('Đường link không hợp lệ. Phải là link Apps Script Web App kết thúc bằng /exec.');
     return;
   }
@@ -62,7 +104,7 @@ function zaloCaiLink() {
 
 function zaloKiemTra() {
   const r = zaloSend_('✅ Kho Mũ TBS: kết nối Zalo bot thành công.\n🕒 ' + fmtFull_(new Date()) + zaloLinkFooter_());
-  SpreadsheetApp.getUi().alert(r.ok ? 'Đã gửi tin thử vào Zalo.' : 'Lỗi: ' + r.error);
+  return zaloNotify_(r.ok ? 'Đã gửi tin thử vào Zalo.' : 'Lỗi: ' + r.error);
 }
 
 /* ---------- Gửi ---------- */
