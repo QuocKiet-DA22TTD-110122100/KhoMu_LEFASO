@@ -1856,7 +1856,7 @@ function localSync(ops){
     K.logs.unshift({
       thoiGian:t, loai:op.loai, ke:op.ke, tang:op.tang, o:op.o, maVT:op.maVT,
       soLuong: op.loai === 'XUAT' ? -op.soLuong : op.loai === 'KIEMKE' ? op.soLuong - cur : op.soLuong,
-      nguoi: SESS ? SESS.user.ma : 'demo',
+      nguoi: SESS ? (SESS.user.ten && SESS.user.ten !== SESS.user.ma ? SESS.user.ten + ' (' + SESS.user.ma + ')' : SESS.user.ma) : 'demo',
       ghiChu: op.loai === 'KIEMKE' ? 'Hệ thống: ' + cur + ' → Thực tế: ' + op.soLuong : ''
     });
     return { id: op.id, ok:true };
@@ -1872,7 +1872,7 @@ async function flush(){
   const batch = Q.slice(0, 40);
   try {
     // Batch Sync (Gửi gộp): gom cả mảng queue gửi trong 1 request duy nhất
-    const r = API ? await post('BATCH_SYNC', { ops: batch, user: SESS.user.ma }) : localSync(batch);
+    const r = API ? await post('BATCH_SYNC', { ops: batch, user: SESS.user.ma, userTen: SESS.user.ten || SESS.user.ma }) : localSync(batch);
     const done = {};
     r.results.forEach(x => {
       done[x.id] = true;
@@ -1902,7 +1902,7 @@ async function pull(){
 function enqueue(op){
   op.id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
   op.transactionId = op.id;
-  op.luc = Date.now(); op.nguoi = SESS ? SESS.user.ma : 'kho';
+  op.luc = Date.now(); op.nguoi = SESS ? SESS.user.ma : 'kho'; op.nguoiTen = SESS ? (SESS.user.ten || SESS.user.ma) : 'kho';
   Q.push(op); save(LS.queue, Q); renderSync(); refreshView(); flush();
 }
 function renderSync(){
@@ -3590,7 +3590,7 @@ async function saveReconBatchToSheet(){
         let sent = false;
         for (let retry = 1; retry <= 3; retry++) {
           try {
-            await post('BATCH_SYNC', { ops: chunk, user: SESS ? SESS.user.ma : 'kho' });
+            await post('BATCH_SYNC', { ops: chunk, user: SESS ? SESS.user.ma : 'kho', userTen: SESS ? (SESS.user.ten || SESS.user.ma) : 'kho' });
             sent = true;
             break;
           } catch (err) {
@@ -5152,7 +5152,7 @@ $('#btnSaveItem').onclick = async () => {
    LỊCH SỬ
    ===================================================================== */
 function getAllLogs(){
-  const pend = Q.slice().reverse().map(op => ({ thoiGian:'Chờ gửi', loai:op.loai, ke:op.ke, tang:op.tang, o:op.o, maVT:op.maVT, soLuong: op.loai === 'XUAT' ? -op.soLuong : op.soLuong, nguoi:op.nguoi, pending:true }));
+  const pend = Q.slice().reverse().map(op => ({ thoiGian:'Chờ gửi', loai:op.loai, ke:op.ke, tang:op.tang, o:op.o, maVT:op.maVT, soLuong: op.loai === 'XUAT' ? -op.soLuong : op.soLuong, nguoi:(op.nguoiTen && op.nguoiTen !== op.nguoi) ? (op.nguoiTen + ' (' + op.nguoi + ')') : op.nguoi, pending:true }));
   const errs = ERRS.slice(0, 10).map(e => Object.assign({}, e, { thoiGian:'LỖI', ghiChu:e.error, soLuong: e.loai === 'XUAT' ? -e.soLuong : e.soLuong, err:true }));
   return errs.concat(pend, K.logs || []);
 }

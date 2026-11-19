@@ -1,8 +1,13 @@
 /**
  * ZALO BOT cho KHO MŨ TBS
  * Script Properties cần có: ZALO_BOT_TOKEN, ZALO_GROUP_CHAT_ID
+ * Tuỳ chọn: ZALO_APP_URL (link Web App /exec gắn cuối tin nhắn)
  */
-const ZALO = { API: 'https://bot-api.zaloplatforms.com/bot', MAX_LEN: 1800 };
+const ZALO = {
+  API: 'https://bot-api.zaloplatforms.com/bot',
+  MAX_LEN: 1800,
+  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxxPGIEsz5raJMYCQzdIrhNDO1Ecqz13vKPxc5yd0c0LSjlB1EpKG8KhGCpw0OEB91Pgg/exec'
+};
 var ZALO_QUEUE_ = [];   // sự kiện chờ gửi trong 1 lần chạy
 
 /* ---------- Cấu hình (chạy từ menu) ---------- */
@@ -33,13 +38,81 @@ function zaloLayChatId() {
   SpreadsheetApp.getUi().alert('Đã lưu ZALO_GROUP_CHAT_ID = ' + first + (ids.length > 1 ? '\nCác ID khác: ' + ids.slice(1).join(', ') : ''));
 }
 
+function zaloCaiLink() {
+  const ui = SpreadsheetApp.getUi();
+  const cur = zaloWebAppUrl_();
+  const r = ui.prompt('Zalo Bot — Đường link Web App',
+    'Dán link Web App Apps Script (/exec) để gắn vào cuối thông báo Zalo.\nĐể trống rồi bấm OK để dùng link mặc định.\nHiện tại: ' + (cur || '(chưa có)'),
+    ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK) return;
+  const url = r.getResponseText().trim();
+  const props = PropertiesService.getScriptProperties();
+  if (!url) {
+    props.deleteProperty('ZALO_APP_URL');
+    ui.alert('Đã khôi phục đường link mặc định: ' + (zaloWebAppUrl_() || '(chưa có)'));
+    return;
+  }
+  if (!/^https:\/\/script\.google\.com\/(?:a\/macros\/[^/\s]+|macros)\/s\/[^/\s]+\/exec(?:\?.*)?$/i.test(url)) {
+    ui.alert('Đường link không hợp lệ. Phải là link Apps Script Web App kết thúc bằng /exec.');
+    return;
+  }
+  props.setProperty('ZALO_APP_URL', url);
+  ui.alert('Đã lưu đường link thông báo Zalo:\n' + url);
+}
+
 function zaloKiemTra() {
-  const r = zaloSend_('✅ Kho Mũ TBS: kết nối Zalo bot thành công.\n' + fmtFull_(new Date()));
+  const r = zaloSend_('✅ Kho Mũ TBS: kết nối Zalo bot thành công.\n🕒 ' + fmtFull_(new Date()) + zaloLinkFooter_());
   SpreadsheetApp.getUi().alert(r.ok ? 'Đã gửi tin thử vào Zalo.' : 'Lỗi: ' + r.error);
 }
 
 /* ---------- Gửi ---------- */
 function zaloProp_(k) { return PropertiesService.getScriptProperties().getProperty(k) || ''; }
+
+function zaloWebAppUrl_() {
+  const propUrl = zaloProp_('ZALO_APP_URL').trim();
+  if (propUrl) return propUrl;
+  try {
+    const svcUrl = String((ScriptApp.getService() && ScriptApp.getService().getUrl()) || '').trim();
+    if (/^https:\/\/script\.google\.com\/(?:a\/macros\/[^/\s]+|macros)\/s\/[^/\s]+\/exec$/i.test(svcUrl)) {
+      return svcUrl;
+    }
+  } catch (e) {}
+  return String(ZALO.WEB_APP_URL || '').trim();
+}
+
+function zaloLinkFooter_() {
+  const url = zaloWebAppUrl_();
+  return url ? '\n🔗 Mở app Kho Mũ: ' + url : '';
+}
+
+function zaloLoadUsers_() {
+  if (typeof getUserNameMap_ === 'function') return getUserNameMap_();
+  const v = sh_('Users').getDataRange().getValues();
+  if (!v || v.length < 2) return {};
+  const head = (v[0] || []).map(function (h) { return String(h || '').trim().toLowerCase(); });
+  let maIdx = head.indexOf('ma');
+  if (maIdx < 0) maIdx = 0;
+  let tenIdx = head.findIndex(function (h) { return h === 'ten' || h.indexOf('ten') >= 0 || h.indexOf('tên') >= 0; });
+  if (tenIdx < 0) tenIdx = 1;
+  const users = {};
+  for (let i = 1; i < v.length; i++) {
+    const k = String(v[i][maIdx] || '').trim().toLowerCase();
+    const t = String(v[i][tenIdx] || '').trim();
+    if (k && t) users[k] = t;
+  }
+  return users;
+}
+
+function zaloFormatNguoi_(userMa, userTen, users) {
+  const maU = String(userMa || 'kho').trim().toLowerCase();
+  const tenSheet = String((users && users[maU]) || '').trim();
+  const tenEv = String(userTen || '').trim();
+  const hoTen = (tenSheet && tenSheet.toLowerCase() !== maU)
+    ? tenSheet
+    : ((tenEv && tenEv.toLowerCase() !== maU) ? tenEv : (tenSheet || tenEv));
+  if (hoTen && hoTen.toLowerCase() !== maU) return hoTen + ' (' + maU + ')';
+  return hoTen || maU;
+}
 
 function zaloSend_(text) {
   const token = zaloProp_('ZALO_BOT_TOKEN'), chat = zaloProp_('ZALO_GROUP_CHAT_ID');
@@ -88,21 +161,27 @@ function zaloFlush_() {
   if (!zaloProp_('ZALO_BOT_TOKEN') || !zaloProp_('ZALO_GROUP_CHAT_ID')) return;
   try {
     const items = {}; rows_('Items').forEach(function (i) { items[code_(i.ma)] = i; });
-    const users = {}; rows_('Users').forEach(function (u) { users[String(u.ma).toLowerCase()] = u.ten; });
+    const users = zaloLoadUsers_();
     const msgs = events.map(function (ev) { return zaloBuildMsg_(ev, items[ev.ma] || {}, users); });
-    // gộp nhiều tin vào ít tin nhất (mỗi tin ≤ ~1800 ký tự)
+    const linkLine = zaloLinkFooter_();
+    const maxBody = Math.max(200, ZALO.MAX_LEN - linkLine.length);
+    // gộp nhiều tin vào ít tin nhất (mỗi tin + đường link ≤ ~1800 ký tự)
     let buf = '';
-    msgs.forEach(function (m) {
-      if (buf && (buf.length + m.length + 30) > ZALO.MAX_LEN) { zaloSend_(buf); buf = ''; }
+    msgs.forEach(function (rawMsg) {
+      let m = rawMsg;
+      if (m.length > maxBody) m = m.slice(0, maxBody - 1) + '…';
+      if (buf && (buf.length + m.length + 14) > maxBody) {
+        zaloSend_(buf + linkLine);
+        buf = '';
+      }
       buf += (buf ? '\n──────────\n' : '') + m;
     });
-    if (buf) zaloSend_(buf);
+    if (buf) zaloSend_(buf + linkLine);
   } catch (e) { /* không để lỗi Zalo ảnh hưởng nghiệp vụ kho */ }
 }
 
 function zaloBuildMsg_(ev, it, users) {
-  const maU = String(ev.userMa || 'kho').toLowerCase();
-  const nguoi = (users[maU] ? users[maU] + ' (' + maU + ')' : maU);
+  const nguoi = zaloFormatNguoi_(ev.userMa, ev.userTen, users);
   const info = parseGhiChuZalo_(ev.note);
   const vitri = ev.ke + '-T' + ev.tang + '-O' + ev.o;
   const mu = ev.ma + (it.ten && it.ten !== ev.ma ? ' — ' + it.ten : '');
@@ -111,9 +190,9 @@ function zaloBuildMsg_(ev, it, users) {
 
   if (ev.loai === 'NHAP') L.push('📥 NHẬP KHO MŨ', '👤 Người nhập: ' + nguoi);
   else if (ev.loai === 'XUAT' && /Sắp kệ từ/i.test(ev.note || '')) L.push('🔄 SẮP KỆ MŨ', '👤 Người thực hiện: ' + nguoi);
-  else if (ev.loai === 'XUAT') L.push('📤 XUẤT KHO MŨ', '👤 Người xuất: ' + nguoi);
-  else if (ev.loai === 'XUAT_THIEU') L.push('❌ XUẤT KHÔNG ĐỦ HÀNG', '👤 Người xuất: ' + nguoi);
-  else L.push('📝 KIỂM KÊ Ô', '👤 Người kiểm: ' + nguoi);
+  else if (ev.loai === 'XUAT') L.push('📤 CẤP PHÁT / XUẤT KHO MŨ', '👤 Người cấp phát: ' + nguoi);
+  else if (ev.loai === 'XUAT_THIEU') L.push('❌ CẤP PHÁT KHÔNG ĐỦ HÀNG', '👤 Người cấp phát: ' + nguoi);
+  else L.push('📝 KIỂM KÊ Ô', '👤 Người kiểm kê: ' + nguoi);
 
   L.push('🕒 ' + fmtFull_(ev.time || new Date()));
   L.push('🧢 Mã mũ: ' + mu);
@@ -121,8 +200,8 @@ function zaloBuildMsg_(ev, it, users) {
   L.push('📍 Vị trí: ' + vitri);
 
   if (ev.loai === 'NHAP') L.push('🔢 Số lượng nhập: +' + n_(ev.sl) + ' đôi');
-  else if (ev.loai === 'XUAT') L.push('🔢 Số lượng xuất: −' + n_(ev.sl) + ' đôi');
-  else if (ev.loai === 'XUAT_THIEU') L.push('🔢 Yêu cầu xuất: ' + n_(ev.sl) + ' đôi', '⚠️ Ô chỉ còn: ' + n_(ev.cur) + ' đôi → THIẾU ' + n_(ev.sl - ev.cur) + ' đôi');
+  else if (ev.loai === 'XUAT') L.push('🔢 Số lượng cấp phát: −' + n_(ev.sl) + ' đôi');
+  else if (ev.loai === 'XUAT_THIEU') L.push('🔢 Yêu cầu cấp phát: ' + n_(ev.sl) + ' đôi', '⚠️ Ô chỉ còn: ' + n_(ev.cur) + ' đôi → THIẾU ' + n_(ev.sl - ev.cur) + ' đôi');
   else L.push('🔢 Hệ thống ' + n_(ev.cur) + ' → Thực tế ' + n_(ev.next) + ' (lệch ' + (ev.delta > 0 ? '+' : '') + n_(ev.delta) + ')');
 
   if (ev.loai !== 'XUAT_THIEU') L.push('📦 Tồn ô sau thao tác: ' + n_(ev.next) + ' đôi · Tổng tồn mã: ' + n_(ev.tongMa) + ' đôi');
@@ -139,6 +218,8 @@ function zaloBuildMsg_(ev, it, users) {
 /* ---------- Báo cáo thiếu theo chuyền (24h gần nhất) ---------- */
 function baoCaoThieuZalo() {
   const v = sh_('Logs').getDataRange().getValues();
+  const users = zaloLoadUsers_();
+  const linkLine = zaloLinkFooter_();
   const since = Date.now() - 24 * 3600 * 1000;
   const byLine = {};
   for (let i = v.length - 1; i >= 1 && i > v.length - 1500; i--) {
@@ -146,14 +227,26 @@ function baoCaoThieuZalo() {
     if (t && t < since) break;
     const info = parseGhiChuZalo_(r[8]);
     if (!info.coThieu) continue;
+    const rawNguoi = String(r[7] || 'kho').trim();
+    const maLower = rawNguoi.toLowerCase();
+    const nguoiHienThi = (users[maLower] && users[maLower].toLowerCase() !== maLower)
+      ? (users[maLower] + ' (' + maLower + ')')
+      : rawNguoi;
+    const vai = String(r[1] || '').trim().toUpperCase() === 'NHAP' ? 'Người nhập: ' : 'Người cấp phát: ';
     const key = (info.chuyen ? 'Chuyền ' + info.chuyen : 'Chưa rõ chuyền') + (info.px ? ' · PX ' + info.px : '');
-    (byLine[key] = byLine[key] || []).push(code_(r[5]) + ' (' + r[2] + '-T' + r[3] + '-O' + r[4] + ')' + (info.thieu ? ' thiếu ' + n_(info.thieu) : ''));
+    (byLine[key] = byLine[key] || []).push(
+      code_(r[5]) + ' (' + r[2] + '-T' + r[3] + '-O' + r[4] + ')' +
+      (info.thieu ? ' thiếu ' + n_(info.thieu) : '') +
+      ' — ' + vai + nguoiHienThi
+    );
   }
   const keys = Object.keys(byLine).sort();
-  if (!keys.length) { zaloSend_('✅ Kho Mũ TBS — 24h qua không có chuyền nào bị thiếu mũ.'); return; }
+  if (!keys.length) { zaloSend_('✅ Kho Mũ TBS — 24h qua không có chuyền nào bị thiếu mũ.' + linkLine); return; }
   let txt = '⚠️ BÁO CÁO CHUYỀN THIẾU MŨ (24h qua)\n' + fmtFull_(new Date());
   keys.forEach(function (k) { txt += '\n\n🧵 ' + k + ':\n• ' + byLine[k].join('\n• '); });
-  zaloSend_(txt.slice(0, ZALO.MAX_LEN));
+  const maxBody = Math.max(200, ZALO.MAX_LEN - linkLine.length);
+  if (txt.length > maxBody) txt = txt.slice(0, maxBody - 1) + '…';
+  zaloSend_(txt + linkLine);
 }
 
 function zaloBatTrigger() {

@@ -41,12 +41,13 @@ function onOpen() {
       .addItem('6. Xoá sạch dữ liệu mẫu (giữ kệ & tài khoản)', 'clearSampleData')
       .addSeparator()
       .addItem('7. Reset mật khẩu admin về 123456', 'resetAdminPassword')
-      .addToUi()
       .addSeparator()
       .addItem('8. Zalo: Dán token bot', 'zaloCaiToken')
       .addItem('9. Zalo: Lấy Chat ID nhóm', 'zaloLayChatId')
       .addItem('10. Zalo: Gửi tin thử', 'zaloKiemTra')
-      .addItem('11. Zalo: Bật báo cáo thiếu 17:00 hàng ngày', 'zaloBatTrigger');
+      .addItem('11. Zalo: Bật báo cáo thiếu 17:00 hàng ngày', 'zaloBatTrigger')
+      .addItem('12. Zalo: Cài đường link Web App (/exec)', 'zaloCaiLink')
+      .addToUi();
   } catch (e) {}
 }
 
@@ -356,18 +357,21 @@ function clearSampleData() {
 }
 
 function taoNguoiDung(ma, ten, matKhau, vaiTro) {
-  ma = String(ma).trim().toLowerCase();
+  ma = String(ma || '').trim().toLowerCase();
+  ten = String(ten || '').trim();
   if (!ma || !matKhau) throw new Error('Thiếu mã hoặc mật khẩu');
   const salt = Utilities.getUuid();
   const s = sh_('Users');
   const data = s.getDataRange().getValues();
-  const row = [ma, ten || ma, (vaiTro || 'WORKER').toUpperCase(), salt, hash_(matKhau, salt), true];
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]).toLowerCase() === ma) {
+    if (String(data[i][0] || '').trim().toLowerCase() === ma) {
+      const finalTen = ten || String(data[i][1] || '').trim() || ma;
+      const row = [ma, finalTen, (vaiTro || 'WORKER').toUpperCase(), salt, hash_(matKhau, salt), true];
       s.getRange(i + 1, 1, 1, row.length).setValues([row]);
       return 'Đã cập nhật ' + ma;
     }
   }
+  const row = [ma, ten || ma, (vaiTro || 'WORKER').toUpperCase(), salt, hash_(matKhau, salt), true];
   s.appendRow(row);
   return 'Đã tạo ' + ma;
 }
@@ -474,10 +478,11 @@ const API = {
 
   login: function (req) {
     const ma = String(req.ma || '').trim().toLowerCase();
-    const u = rows_('Users').filter(function (x) { return String(x.ma).toLowerCase() === ma; })[0];
+    const u = rows_('Users').filter(function (x) { return String(x.ma || '').trim().toLowerCase() === ma; })[0];
     if (!u || u.hoatDong === false || String(u.hoatDong).toUpperCase() === 'FALSE') throw new Error('Sai tài khoản hoặc mật khẩu');
     if (hash_(String(req.mk || ''), u.salt) !== u.hash) throw new Error('Sai tài khoản hoặc mật khẩu');
-    const user = { ma: u.ma, ten: u.ten, vaiTro: String(u.vaiTro).toUpperCase() };
+    const userMa = String(u.ma || '').trim().toLowerCase();
+    const user = { ma: userMa, ten: String(u.ten || userMa).trim(), vaiTro: String(u.vaiTro).toUpperCase() };
     const token = Utilities.getUuid();
     putSession_(token, user);
     return { token: token, user: user, kho: getData_() };
@@ -496,7 +501,9 @@ const API = {
   },
 
   BATCH_SYNC: function (req) {
-    const user = req.token ? auth_(req) : { ma: req.user || 'kho', ten: req.user || 'Kho', vaiTro: 'WORKER' };
+    const user = req.token
+      ? auth_(req)
+      : { ma: String(req.user || 'kho').trim().toLowerCase(), ten: String(req.userTen || req.user || 'Kho').trim(), vaiTro: 'WORKER' };
     const ops = Array.isArray(req.ops) ? req.ops : (Array.isArray(req.queue) ? req.queue : []);
     return applyOps_(ops, user);
   },
@@ -627,7 +634,7 @@ function processWarehouseAction(payload) {
     soLuong: Number(payload.qty !== undefined ? payload.qty : payload.soLuong),
     ghiChu: String(payload.ghiChu || '')
   };
-  const user = { ma: String(payload.user || 'kho') };
+  const user = { ma: String(payload.user || 'kho').trim().toLowerCase(), ten: String(payload.userTen || '').trim() };
   const res = applyOps_([op], user);
   const first = (res.results && res.results[0]) || {};
   if (!first.ok) throw new Error(first.error || 'Lỗi ghi dữ liệu kho');
@@ -657,6 +664,26 @@ function getData_() {
 }
 
 /**
+ * Đọc danh sách họ tên nhân viên theo mã từ sheet Users.
+ */
+function getUserNameMap_() {
+  const v = sh_('Users').getDataRange().getValues();
+  if (!v || v.length < 2) return {};
+  const head = (v[0] || []).map(function (h) { return String(h || '').trim().toLowerCase(); });
+  let maIdx = head.indexOf('ma');
+  if (maIdx < 0) maIdx = 0;
+  let tenIdx = head.findIndex(function (h) { return h === 'ten' || h.indexOf('ten') >= 0 || h.indexOf('tên') >= 0; });
+  if (tenIdx < 0) tenIdx = 1;
+  const map = {};
+  for (let i = 1; i < v.length; i++) {
+    const k = String(v[i][maIdx] || '').trim().toLowerCase();
+    const t = String(v[i][tenIdx] || '').trim();
+    if (k && t) map[k] = t;
+  }
+  return map;
+}
+
+/**
  * Đọc toàn bộ Stock, Logs, Items 1 lần vào RAM -> tính toán -> Ghi ngược lại 1 lần bằng `setValues()`.
  */
 function applyOps_(ops, user) {
@@ -671,6 +698,7 @@ function applyOps_(ops, user) {
   }
   const itemCodes = {};
   rows_('Items').forEach(function (i) { itemCodes[code_(i.ma)] = true; });
+  const userNameMap = getUserNameMap_();
 
   const results = [];
   const newLogs = [];
@@ -683,6 +711,16 @@ function applyOps_(ops, user) {
       const txId = String((op && (op.id || op.transactionId)) || '').trim();
       if (!op || !txId) throw new Error('Thiếu mã giao dịch (transactionId/id)');
       if (doneIds[txId]) { results.push({ id: txId, ok: true, dup: true }); return; }
+
+      const opUserMa = String((user && user.ma) || (op && op.nguoi) || 'kho').trim().toLowerCase();
+      const sheetTen = userNameMap[opUserMa] || '';
+      const sessTen = String((user && user.ten) || (op && op.nguoiTen) || '').trim();
+      const opUserTen = (sheetTen && sheetTen.toLowerCase() !== opUserMa)
+        ? sheetTen
+        : ((sessTen && sessTen.toLowerCase() !== opUserMa) ? sessTen : (sheetTen || sessTen));
+      const logNguoi = (opUserTen && opUserTen.toLowerCase() !== opUserMa)
+        ? (opUserTen + ' (' + opUserMa + ')')
+        : (opUserTen || opUserMa);
 
       const p = parseFlexiblePos_(op.ke || op.binCode, op.tang, op.o);
       if (!p) throw new Error('Vị trí kệ/tầng/ô không hợp lệ: ' + (op.ke || op.binCode || ''));
@@ -710,9 +748,9 @@ function applyOps_(ops, user) {
         }
       } else if (loai === 'XUAT') {
         if (sl <= 0) throw new Error('Số lượng phải > 0');
-                if (sl > cur) {
+        if (sl > cur) {
           zaloQueue_({ loai: 'XUAT_THIEU', ke: ke, tang: tang, o: o, ma: ma, sl: sl, cur: cur,
-                       note: op.ghiChu || '', userMa: (user && user.ma) || 'kho', time: now });
+                       note: op.ghiChu || '', userMa: opUserMa, userTen: opUserTen, time: now });
           throw new Error('Ô ' + ke + '-T' + tang + '-O' + o + ' chỉ còn ' + cur + ' ' + ma);
         }
         next = cur - sl; delta = -sl;
@@ -738,11 +776,12 @@ function applyOps_(ops, user) {
       if (idx > 0) { stock[idx][4] = next; stock[idx][5] = now; stockChanged = true; }
       else if (next > 0) { stock.push([ke, tang, o, ma, next, now]); stockChanged = true; }
 
+      newLogs.push([now, loai, ke, tang, o, ma, delta, logNguoi, note, txId]);
       let tongMa = 0;
       for (let i = 1; i < stock.length; i++) if (code_(stock[i][3]) === ma) tongMa += Number(stock[i][4]) || 0;
       zaloQueue_({ loai: loai, ke: ke, tang: tang, o: o, ma: ma, sl: Math.abs(delta), delta: delta,
                    cur: cur, next: next, tongMa: tongMa, note: note,
-                   userMa: (user && user.ma) || 'kho', time: now });
+                   userMa: opUserMa, userTen: opUserTen, time: now });
       doneIds[txId] = true;
       results.push({ id: txId, ok: true, soLuong: next });
     } catch (err) {

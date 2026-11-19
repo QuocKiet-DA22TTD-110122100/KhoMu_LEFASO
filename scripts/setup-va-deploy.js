@@ -83,6 +83,16 @@ function embedDefaultApi(execUrl) {
   fs.copyFileSync(DOCS_INDEX_PATH, ROOT_INDEX_PATH);
   fs.copyFileSync(DOCS_INDEX_PATH, GAS_INDEX_PATH);
   console.log('[OK] Da gan DEFAULT_API vao docs/index.html, index.html va apps-script/Index.html: ' + execUrl);
+
+  const zaloGsPath = path.join(GAS_DIR, 'ZaloKho.gs');
+  if (fs.existsSync(zaloGsPath)) {
+    const zaloCode = fs.readFileSync(zaloGsPath, 'utf8');
+    const zaloRe = /WEB_APP_URL:\s*'[^']*'/;
+    if (zaloRe.test(zaloCode)) {
+      fs.writeFileSync(zaloGsPath, zaloCode.replace(zaloRe, `WEB_APP_URL: '${execUrl}'`), 'utf8');
+      console.log('[OK] Da dong bo WEB_APP_URL vao apps-script/ZaloKho.gs: ' + execUrl);
+    }
+  }
 }
 
 /**
