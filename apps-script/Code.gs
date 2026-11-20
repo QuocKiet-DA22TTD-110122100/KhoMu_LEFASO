@@ -20,7 +20,7 @@ const KHO = {
 
 const SHEETS = {
   Shelves: ['ma', 'khu', 'soTang', 'soO', 'ghiChu'],
-  Items:   ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu'],
+  Items:   ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu', 'po', 'so'],
   Stock:   ['ke', 'tang', 'o', 'maVT', 'soLuong', 'capNhat'],
   Logs:    ['thoiGian', 'loai', 'ke', 'tang', 'o', 'maVT', 'soLuong', 'nguoi', 'ghiChu', 'clientId'],
   Users:   ['ma', 'ten', 'vaiTro', 'salt', 'hash', 'hoatDong']
@@ -129,6 +129,11 @@ function cleanAndNormalizeSheetData() {
     const r = rawItems[i];
     const ma = code_(r[0]).replace(/^(VT|MU):\s*/, '');
     if (!ma) continue;
+    const rawGhiChu = String(r[6] || '').trim();
+    const extracted = extractPoSoFromNote_(rawGhiChu);
+    let poVal = mergeCsvCodes_(r[7], extracted.po);
+    if (!poVal && /^(?:RB|PO|W)\d{3,}/i.test(ma)) poVal = ma;
+    const soVal = mergeCsvCodes_(r[8], extracted.so);
     if (!itemMap[ma]) {
       itemMap[ma] = [
         ma,
@@ -137,10 +142,14 @@ function cleanAndNormalizeSheetData() {
         String(r[3] || '').trim(),
         String(r[4] || '').trim(),
         String(r[5] || 'đôi').trim() || 'đôi',
-        String(r[6] || '').trim()
+        rawGhiChu,
+        poVal,
+        soVal
       ];
       itemOrder.push(ma);
     } else {
+      itemMap[ma][7] = mergeCsvCodes_(itemMap[ma][7], poVal);
+      itemMap[ma][8] = mergeCsvCodes_(itemMap[ma][8], soVal);
       dupItemsRemoved++;
     }
   }
@@ -173,7 +182,7 @@ function cleanAndNormalizeSheetData() {
       mergedStockRows++;
     }
     if (!itemMap[ma]) {
-      itemMap[ma] = [ma, ma, '', '', '', 'đôi', 'Tự động đồng bộ từ tồn kho'];
+      itemMap[ma] = [ma, ma, '', '', '', 'đôi', 'Tự động đồng bộ từ tồn kho', '', ''];
       itemOrder.push(ma);
       autoAddedItems++;
     }
@@ -183,6 +192,7 @@ function cleanAndNormalizeSheetData() {
   if (shItems.getLastRow() > 1) shItems.getRange(2, 1, shItems.getLastRow() - 1, SHEETS.Items.length).clearContent();
   if (itemOrder.length > 0) {
     const cleanItems = itemOrder.map(function (k) { return itemMap[k]; });
+    try { shItems.getRange(2, 8, cleanItems.length, 2).setNumberFormat('@'); } catch (e) {}
     shItems.getRange(2, 1, cleanItems.length, SHEETS.Items.length).setValues(cleanItems);
   }
 
@@ -310,12 +320,12 @@ function setupAutoArchiveTrigger() {
 function seedSampleData() {
   ensureSetup_();
   const sampleItems = [
-    { ma: 'MU-NK-DEN-41', ten: 'Mũ Nike Air Đen', model: 'NK-AIR-26', mau: 'Đen', size: '41', dvt: 'đôi', ghiChu: 'Chuyền may 01' },
-    { ma: 'MU-NK-TRG-42', ten: 'Mũ Nike Air Trắng', model: 'NK-AIR-26', mau: 'Trắng', size: '42', dvt: 'đôi', ghiChu: 'Chuyền may 01' },
-    { ma: 'MU-AD-XAM-40', ten: 'Mũ Adidas Run Xám', model: 'AD-RUN-08', mau: 'Xám', size: '40', dvt: 'đôi', ghiChu: 'Chuyền may 02' },
-    { ma: 'MU-AD-NAV-43', ten: 'Mũ Adidas Run Navy', model: 'AD-RUN-08', mau: 'Navy', size: '43', dvt: 'đôi', ghiChu: 'Chuyền may 02' },
-    { ma: 'MU-RB-NAU-39', ten: 'Mũ Reebok Classic Nâu', model: 'RB-CLS-12', mau: 'Nâu', size: '39', dvt: 'đôi', ghiChu: 'Chuyền may 03' },
-    { ma: 'MU-PM-DO-41',  ten: 'Mũ Puma Sport Đỏ', model: 'PM-SPT-05', mau: 'Đỏ', size: '41', dvt: 'đôi', ghiChu: 'Chuyền may 04' }
+    { ma: 'MU-NK-DEN-41', ten: 'Mũ Nike Air Đen', model: 'NK-AIR-26', mau: 'Đen', size: '41', dvt: 'đôi', ghiChu: 'Chuyền may 01', po: 'PO2601', so: 'SO8801' },
+    { ma: 'MU-NK-TRG-42', ten: 'Mũ Nike Air Trắng', model: 'NK-AIR-26', mau: 'Trắng', size: '42', dvt: 'đôi', ghiChu: 'Chuyền may 01', po: 'PO2602', so: 'SO8802' },
+    { ma: 'MU-AD-XAM-40', ten: 'Mũ Adidas Run Xám', model: 'AD-RUN-08', mau: 'Xám', size: '40', dvt: 'đôi', ghiChu: 'Chuyền may 02', po: 'PO2603', so: 'SO8803' },
+    { ma: 'MU-AD-NAV-43', ten: 'Mũ Adidas Run Navy', model: 'AD-RUN-08', mau: 'Navy', size: '43', dvt: 'đôi', ghiChu: 'Chuyền may 02', po: 'PO2604', so: 'SO8804' },
+    { ma: 'MU-RB-NAU-39', ten: 'Mũ Reebok Classic Nâu', model: 'RB-CLS-12', mau: 'Nâu', size: '39', dvt: 'đôi', ghiChu: 'Chuyền may 03', po: 'PO2605', so: 'SO8805' },
+    { ma: 'MU-PM-DO-41',  ten: 'Mũ Puma Sport Đỏ', model: 'PM-SPT-05', mau: 'Đỏ', size: '41', dvt: 'đôi', ghiChu: 'Chuyền may 04', po: 'PO2606', so: 'SO8806' }
   ];
   upsertItemsBatch_(sampleItems, true);
 
@@ -527,16 +537,42 @@ const API = {
     const it = req.item || {};
     const ma = code_(it.ma);
     if (!ma) throw new Error('Thiếu mã mũ');
-    upsertItemsBatch_([{
-      ma: ma,
-      ten: String(it.ten || ma).trim(),
-      model: String(it.model || '').trim(),
-      mau: String(it.mau || '').trim(),
-      size: String(it.size || '').trim(),
-      dvt: String(it.dvt || 'đôi').trim(),
-      ghiChu: String(it.ghiChu || '').trim()
-    }], true);
+    const itemPayload = { ma: ma };
+    if (it.ten !== undefined) itemPayload.ten = String(it.ten || ma).trim();
+    if (it.model !== undefined) itemPayload.model = String(it.model || '').trim();
+    if (it.mau !== undefined) itemPayload.mau = String(it.mau || '').trim();
+    if (it.size !== undefined) itemPayload.size = String(it.size || '').trim();
+    if (it.dvt !== undefined) itemPayload.dvt = String(it.dvt || 'đôi').trim() || 'đôi';
+    if (it.ghiChu !== undefined) itemPayload.ghiChu = String(it.ghiChu || '').trim();
+    if (it.po !== undefined) itemPayload.po = mergeCsvCodes_(code_(it.po), '');
+    if (it.so !== undefined) itemPayload.so = mergeCsvCodes_(code_(it.so), '');
+    upsertItemsBatch_([itemPayload], true);
     return { kho: getData_() };
+  },
+
+  syncItemsMeta: function (req) {
+    auth_(req);
+    const list = Array.isArray(req.items) ? req.items : [];
+    const normalized = [];
+    list.forEach(function (it) {
+      const ma = code_(it && it.ma).replace(/^(VT|MU):\s*/, '');
+      if (!ma) return;
+      normalized.push({
+        ma: ma,
+        ten: String(it.ten || '').trim(),
+        model: String(it.model || it.khuon || '').trim(),
+        mau: String(it.mau || it.he || '').trim(),
+        size: String(it.size || '').trim(),
+        dvt: String(it.dvt || 'đôi').trim() || 'đôi',
+        po: mergeCsvCodes_(code_(it.po), ''),
+        so: mergeCsvCodes_(code_(it.so), ''),
+        onlyUpdateExisting: !!it.onlyUpdateExisting
+      });
+    });
+    if (normalized.length) {
+      upsertItemsBatch_(normalized, 'sync');
+    }
+    return req.skipReload ? { updated: normalized.length } : { updated: normalized.length, kho: getData_() };
   },
 
   deleteItem: function (req) {
@@ -547,13 +583,18 @@ const API = {
     const hasStock = rows_('Stock').some(function (s) { return code_(s.maVT) === ma && Number(s.soLuong) > 0; });
     if (hasStock) throw new Error('Mã ' + ma + ' đang còn tồn trong kho, không thể xoá');
     const sh = sh_('Items');
+    const cols = SHEETS.Items.length;
     const data = sh.getDataRange().getValues();
-    const keep = [data[0]];
+    const keep = [];
     for (let i = 1; i < data.length; i++) {
-      if (code_(data[i][0]) !== ma) keep.push(data[i]);
+      if (code_(data[i][0]) !== ma) {
+        const row = data[i].slice(0, cols);
+        while (row.length < cols) row.push('');
+        keep.push(row);
+      }
     }
-    if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, SHEETS.Items.length).clearContent();
-    if (keep.length > 1) sh.getRange(2, 1, keep.length - 1, SHEETS.Items.length).setValues(keep.slice(1));
+    if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, cols).clearContent();
+    if (keep.length > 0) sh.getRange(2, 1, keep.length, cols).setValues(keep);
     return { kho: getData_() };
   },
 
@@ -643,18 +684,44 @@ function processWarehouseAction(payload) {
 
 function getData_() {
   const logs = sh_('Logs').getDataRange().getValues();
-  const head = logs.shift();
+  const head = logs.shift() || SHEETS.Logs;
+  const logPoSoMap = {};
+  for (let i = 0; i < logs.length; i++) {
+    const r = logs[i];
+    const ma = code_(r[5]).replace(/^(VT|MU):\s*/, '');
+    if (!ma) continue;
+    const ext = extractPoSoFromNote_(r[8]);
+    if (ext.po || ext.so) {
+      if (!logPoSoMap[ma]) logPoSoMap[ma] = { po: '', so: '' };
+      if (ext.po) logPoSoMap[ma].po = mergeCsvCodes_(logPoSoMap[ma].po, ext.po);
+      if (ext.so) logPoSoMap[ma].so = mergeCsvCodes_(logPoSoMap[ma].so, ext.so);
+    }
+  }
   const recent = logs.slice(-100).reverse().map(function (r) {
     const o = {}; head.forEach(function (k, i) { o[k] = r[i]; });
     o.thoiGian = fmt_(o.thoiGian);
     return o;
+  });
+  const items = rows_('Items').map(function (it) {
+    const ma = code_(it.ma).replace(/^(VT|MU):\s*/, '');
+    const fromNote = extractPoSoFromNote_(it.ghiChu);
+    const fromLogs = logPoSoMap[ma] || { po: '', so: '' };
+    let po = mergeCsvCodes_(it.po, '');
+    let so = mergeCsvCodes_(it.so, '');
+    if (!po && fromNote.po) po = fromNote.po;
+    if (!so && fromNote.so) so = fromNote.so;
+    if (!po && fromLogs.po) po = fromLogs.po;
+    if (!so && fromLogs.so) so = fromLogs.so;
+    it.po = po;
+    it.so = so;
+    return it;
   });
   let slotNotes = {};
   try { slotNotes = JSON.parse(PropertiesService.getScriptProperties().getProperty('SLOT_NOTES') || '{}'); } catch (e) {}
   return {
     kho: KHO,
     shelves: rows_('Shelves'),
-    items: rows_('Items'),
+    items: items,
     stock: rows_('Stock').filter(function (s) { return Number(s.soLuong) > 0; })
       .map(function (s) { return { ke: s.ke, tang: Number(s.tang), o: Number(s.o), maVT: String(s.maVT), soLuong: Number(s.soLuong) }; }),
     slotNotes: slotNotes,
@@ -703,6 +770,7 @@ function applyOps_(ops, user) {
   const results = [];
   const newLogs = [];
   const newItems = [];
+  const itemMetaUpdates = [];
   let stockChanged = false;
   const now = new Date();
 
@@ -739,12 +807,39 @@ function applyOps_(ops, user) {
       const cur = idx > 0 ? Number(stock[idx][4]) || 0 : 0;
       let next = cur, delta = 0, note = op.ghiChu || '';
 
+      const notePoSo = extractPoSoFromNote_(op.ghiChu);
+      const opPo = mergeCsvCodes_(code_(op.po), notePoSo.po);
+      const opSo = mergeCsvCodes_(code_(op.so), notePoSo.so);
+      const opModel = String(op.khuon || op.model || '').trim();
+      const opMau = String(op.he || op.mau || '').trim();
+      const opSize = String(op.size || '').trim();
+
       if (loai === 'NHAP') {
         if (sl <= 0) throw new Error('Số lượng phải > 0');
         next = cur + sl; delta = sl;
         if (!itemCodes[ma]) {
-          newItems.push({ ma: ma, ten: op.tenVT || ma, dvt: 'đôi' });
+          newItems.push({
+            ma: ma,
+            ten: op.tenVT || op.ten || ma,
+            model: opModel,
+            mau: opMau,
+            size: opSize,
+            dvt: op.dvt || 'đôi',
+            ghiChu: '',
+            po: opPo,
+            so: opSo
+          });
           itemCodes[ma] = true;
+        } else if (opPo || opSo || opModel || opMau || opSize) {
+          itemMetaUpdates.push({
+            ma: ma,
+            ten: op.tenVT || op.ten || '',
+            model: opModel,
+            mau: opMau,
+            size: opSize,
+            po: opPo,
+            so: opSo
+          });
         }
       } else if (loai === 'XUAT') {
         if (sl <= 0) throw new Error('Số lượng phải > 0');
@@ -762,12 +857,25 @@ function applyOps_(ops, user) {
           newItems.push({
             ma: ma,
             ten: op.tenVT || op.ten || ma,
-            model: op.khuon || op.model || '',
-            mau: op.he || op.mau || '',
+            model: opModel,
+            mau: opMau,
+            size: opSize,
             dvt: op.dvt || 'đôi',
-            ghiChu: (op.po ? 'PO: ' + op.po : '') + (op.so ? ' · SO: ' + op.so : '') + (op.ghiChu ? ' · ' + op.ghiChu : '')
+            ghiChu: '',
+            po: opPo,
+            so: opSo
           });
           itemCodes[ma] = true;
+        } else if (itemCodes[ma] && (opPo || opSo || opModel || opMau || opSize)) {
+          itemMetaUpdates.push({
+            ma: ma,
+            ten: op.tenVT || op.ten || '',
+            model: opModel,
+            mau: opMau,
+            size: opSize,
+            po: opPo,
+            so: opSo
+          });
         }
       } else {
         throw new Error('Loại thao tác không hợp lệ: ' + loai);
@@ -789,9 +897,12 @@ function applyOps_(ops, user) {
     }
   });
 
-  // Ghi gộp danh mục mã mới trong 1 lần
+  // Ghi gộp danh mục mã mới & cập nhật metadata (PO, SO, Hệ, Khuôn) trong 1 lần
   if (newItems.length) {
     upsertItemsBatch_(newItems, false);
+  }
+  if (itemMetaUpdates.length) {
+    upsertItemsBatch_(itemMetaUpdates, 'merge');
   }
 
   // Ghi gộp bảng tồn kho trong 1 lần (chỉ giữ dòng soLuong > 0 để bảng luôn sạch)
@@ -818,24 +929,76 @@ function applyOps_(ops, user) {
 
 /**
  * Cập nhật hoặc thêm mới nhiều mã mũ trong 1 lần đọc + 1 lần ghi (`setValues`).
+ * mode: false (chỉ thêm mới), true (ghi đè các trường được truyền), 'merge' (giữ ghi chú cũ, bổ sung metadata & gộp PO/SO),
+ *       'sync' (chuẩn hoá từ file Excel MŨ BTP: sửa tên thiếu/trùng mã, cập nhật model/màu/size, gộp PO/SO, giữ ghi chú cũ).
  */
-function upsertItemsBatch_(itemsList, overwrite) {
+function upsertItemsBatch_(itemsList, mode) {
   if (!itemsList || !itemsList.length) return;
   const s = sh_('Items');
+  const cols = SHEETS.Items.length;
   const data = s.getDataRange().getValues();
   const mapIdx = {};
   for (let i = 1; i < data.length; i++) {
-    mapIdx[code_(data[i][0])] = i;
+    const row = data[i].slice(0, cols);
+    while (row.length < cols) row.push('');
+    data[i] = row;
+    const k = code_(row[0]);
+    if (k) mapIdx[k] = i;
   }
   let changed = false;
   itemsList.forEach(function (it) {
     const ma = code_(it.ma);
     if (!ma) return;
-    const row = SHEETS.Items.map(function (k) { return it[k] === undefined ? '' : it[k]; });
-    row[0] = ma;
     if (mapIdx[ma] !== undefined) {
-      if (overwrite) { data[mapIdx[ma]] = row; changed = true; }
-    } else {
+      const existing = data[mapIdx[ma]];
+      if (mode === true) {
+        SHEETS.Items.forEach(function (k, idx) {
+          if (idx === 0) { existing[0] = ma; return; }
+          if (it[k] !== undefined) {
+            const val = (k === 'po' || k === 'so') ? mergeCsvCodes_(it[k], '') : it[k];
+            if (existing[idx] !== val) { existing[idx] = val; changed = true; }
+          }
+        });
+      } else if (mode === 'merge') {
+        const newTen = String(it.ten || '').trim();
+        if (newTen && newTen !== ma && (!String(existing[1] || '').trim() || code_(existing[1]) === ma)) {
+          existing[1] = newTen; changed = true;
+        }
+        if (it.model && !String(existing[2] || '').trim()) { existing[2] = String(it.model).trim(); changed = true; }
+        if (it.mau && !String(existing[3] || '').trim()) { existing[3] = String(it.mau).trim(); changed = true; }
+        if (it.size && !String(existing[4] || '').trim()) { existing[4] = String(it.size).trim(); changed = true; }
+        if (it.dvt && !String(existing[5] || '').trim()) { existing[5] = String(it.dvt).trim(); changed = true; }
+        const mergedPo = mergeCsvCodes_(existing[7], it.po);
+        if (mergedPo !== String(existing[7] || '').trim()) { existing[7] = mergedPo; changed = true; }
+        const mergedSo = mergeCsvCodes_(existing[8], it.so);
+        if (mergedSo !== String(existing[8] || '').trim()) { existing[8] = mergedSo; changed = true; }
+      } else if (mode === 'sync') {
+        const newTen = String(it.ten || '').trim();
+        if (newTen && code_(newTen) !== ma && String(existing[1] || '').trim() !== newTen) {
+          existing[1] = newTen; changed = true;
+        }
+        const newModel = String(it.model || it.khuon || '').trim();
+        if (newModel && String(existing[2] || '').trim() !== newModel) { existing[2] = newModel; changed = true; }
+        const newMau = String(it.mau || it.he || '').trim();
+        if (newMau && String(existing[3] || '').trim() !== newMau) { existing[3] = newMau; changed = true; }
+        const newSize = String(it.size || '').trim();
+        if (newSize && String(existing[4] || '').trim() !== newSize) { existing[4] = newSize; changed = true; }
+        if (!String(existing[5] || '').trim()) { existing[5] = String(it.dvt || 'đôi').trim() || 'đôi'; changed = true; }
+        const mergedPo = mergeCsvCodes_(existing[7], it.po);
+        if (mergedPo !== String(existing[7] || '').trim()) { existing[7] = mergedPo; changed = true; }
+        const mergedSo = mergeCsvCodes_(existing[8], it.so);
+        if (mergedSo !== String(existing[8] || '').trim()) { existing[8] = mergedSo; changed = true; }
+      }
+    } else if (!(mode === 'sync' && it.onlyUpdateExisting)) {
+      const row = SHEETS.Items.map(function (k) {
+        if (k === 'ma') return ma;
+        if (k === 'ten') return String(it.ten || ma).trim() || ma;
+        if (k === 'model') return String(it.model || it.khuon || '').trim();
+        if (k === 'mau') return String(it.mau || it.he || '').trim();
+        if (k === 'dvt') return String(it.dvt || 'đôi').trim() || 'đôi';
+        if (k === 'po' || k === 'so') return mergeCsvCodes_(it[k], '');
+        return it[k] === undefined ? '' : it[k];
+      });
       mapIdx[ma] = data.length;
       data.push(row);
       changed = true;
@@ -843,7 +1006,8 @@ function upsertItemsBatch_(itemsList, overwrite) {
   });
   if (changed && data.length > 1) {
     const body = data.slice(1);
-    s.getRange(2, 1, body.length, SHEETS.Items.length).setValues(body);
+    try { s.getRange(2, 8, body.length, 2).setNumberFormat('@'); } catch (e) {}
+    s.getRange(2, 1, body.length, cols).setValues(body);
   }
 }
 
@@ -920,13 +1084,51 @@ function validPos_(ke, tang, o) {
 function maKe_(i) { return 'K' + (i < 10 ? '0' : '') + i; }
 function code_(v) { return String(v === undefined || v === null ? '' : v).trim().toUpperCase(); }
 
+function mergeCsvCodes_(a, b) {
+  const seen = {};
+  const out = [];
+  [a, b].forEach(function (src) {
+    String(src === undefined || src === null ? '' : src)
+      .split(/[,;|\n\r]+/)
+      .forEach(function (part) {
+        const v = code_(part);
+        if (v && v !== '0' && v !== '—' && !seen[v]) {
+          seen[v] = true;
+          out.push(v);
+        }
+      });
+  });
+  return out.join(', ');
+}
+
+function extractPoSoFromNote_(note) {
+  const s = String(note || '');
+  if (!s) return { po: '', so: '' };
+  const poM = s.match(/(?:^|[\s·|;,(\[])PO\s*[:#\-]\s*([^·|;\n\r()]+?)(?=\s*(?:·|\||;|\(|\)|$|,?\s*(?:PO|SO|H[EỆ]|KHU[OÔ]N|CHUY[EỀ]N|PX)\s*[:#\-\d]))/i);
+  const soM = s.match(/(?:^|[\s·|;,(\[])SO\s*[:#\-]\s*([^·|;\n\r()]+?)(?=\s*(?:·|\||;|\(|\)|$|,?\s*(?:PO|SO|H[EỆ]|KHU[OÔ]N|CHUY[EỀ]N|PX)\s*[:#\-\d]))/i);
+  return {
+    po: poM ? mergeCsvCodes_(poM[1], '') : '',
+    so: soM ? mergeCsvCodes_(soM[1], '') : ''
+  };
+}
+
 function sh_(name) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let s = ss.getSheetByName(name);
+  const expected = SHEETS[name];
   if (!s) {
     s = ss.insertSheet(name);
-    s.getRange(1, 1, 1, SHEETS[name].length).setValues([SHEETS[name]]).setFontWeight('bold');
+    s.getRange(1, 1, 1, expected.length).setValues([expected]).setFontWeight('bold');
     s.setFrozenRows(1);
+  } else if (expected) {
+    const lastCol = s.getLastColumn();
+    if (lastCol === 0) {
+      s.getRange(1, 1, 1, expected.length).setValues([expected]).setFontWeight('bold');
+      s.setFrozenRows(1);
+    } else if (lastCol < expected.length) {
+      const missing = expected.slice(lastCol);
+      s.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]).setFontWeight('bold');
+    }
   }
   return s;
 }

@@ -227,6 +227,10 @@ function zaloBuildMsg_(ev, it, users) {
   const info = parseGhiChuZalo_(ev.note);
   const vitri = ev.ke + '-T' + ev.tang + '-O' + ev.o;
   const mu = ev.ma + (it.ten && it.ten !== ev.ma ? ' — ' + it.ten : '');
+  const itPoSo = typeof extractPoSoFromNote_ === 'function' ? extractPoSoFromNote_(it.ghiChu) : { po: '', so: '' };
+  const poVal = String(it.po || itPoSo.po || '').trim();
+  const soVal = String(it.so || itPoSo.so || '').trim();
+  const poSoLine = [poVal && ('PO: ' + poVal), soVal && ('SO: ' + soVal)].filter(Boolean).join(' · ');
   const spec = [it.model, it.mau, it.size && ('Size ' + it.size)].filter(Boolean).join(' · ');
   const L = [];
 
@@ -238,6 +242,7 @@ function zaloBuildMsg_(ev, it, users) {
 
   L.push('🕒 ' + fmtFull_(ev.time || new Date()));
   L.push('🧢 Mã mũ: ' + mu);
+  if (poSoLine) L.push('🧾 ' + poSoLine);
   if (spec) L.push('🎯 ' + spec);
   L.push('📍 Vị trí: ' + vitri);
 
