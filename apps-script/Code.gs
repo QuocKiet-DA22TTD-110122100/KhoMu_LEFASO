@@ -374,20 +374,22 @@ function taoNguoiDung(ma, ten, matKhau, vaiTro) {
   ma = String(ma || '').trim().toLowerCase();
   ten = String(ten || '').trim();
   if (!ma || !matKhau) throw new Error('Thiếu mã hoặc mật khẩu');
+  const rawRole = String(vaiTro || 'THUKHO').trim().toUpperCase();
+  const role = (rawRole === 'ADMIN') ? 'ADMIN' : (rawRole === 'WORKER' ? 'WORKER' : 'THUKHO');
   const salt = Utilities.getUuid();
   const s = sh_('Users');
   const data = s.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][0] || '').trim().toLowerCase() === ma) {
       const finalTen = ten || String(data[i][1] || '').trim() || ma;
-      const row = [ma, finalTen, (vaiTro || 'WORKER').toUpperCase(), salt, hash_(matKhau, salt), true];
+      const row = [ma, finalTen, role, salt, hash_(matKhau, salt), true];
       s.getRange(i + 1, 1, 1, row.length).setValues([row]);
-      return 'Đã cập nhật ' + ma;
+      return 'Đã cập nhật ' + ma + ' (' + role + ')';
     }
   }
-  const row = [ma, ten || ma, (vaiTro || 'WORKER').toUpperCase(), salt, hash_(matKhau, salt), true];
+  const row = [ma, ten || ma, role, salt, hash_(matKhau, salt), true];
   s.appendRow(row);
-  return 'Đã tạo ' + ma;
+  return 'Đã tạo ' + ma + ' (' + role + ')';
 }
 
 /* ============================ HTTP (doGet / doPost + LockService) ============================ */
@@ -496,15 +498,15 @@ const API = {
     if (!u || u.hoatDong === false || String(u.hoatDong).toUpperCase() === 'FALSE') throw new Error('Sai tài khoản hoặc mật khẩu');
     if (hash_(String(req.mk || ''), u.salt) !== u.hash) throw new Error('Sai tài khoản hoặc mật khẩu');
     const userMa = String(u.ma || '').trim().toLowerCase();
-    const user = { ma: userMa, ten: String(u.ten || userMa).trim(), vaiTro: String(u.vaiTro).toUpperCase() };
+    const user = { ma: userMa, ten: String(u.ten || userMa).trim(), vaiTro: String(u.vaiTro || 'THUKHO').trim().toUpperCase() };
     const token = Utilities.getUuid();
     putSession_(token, user);
-    return { token: token, user: user, kho: getData_() };
+    return { token: token, user: user, kho: getData_(user) };
   },
 
   getData: function (req) {
-    auth_(req);
-    return getData_();
+    const user = auth_(req);
+    return getData_(user);
   },
 
   /** Đồng bộ gộp (Batch Sync) một loạt thao tác từ hàng đợi Offline của máy. */
@@ -517,27 +519,27 @@ const API = {
   BATCH_SYNC: function (req) {
     const user = req.token
       ? auth_(req)
-      : { ma: String(req.user || 'kho').trim().toLowerCase(), ten: String(req.userTen || req.user || 'Kho').trim(), vaiTro: 'WORKER' };
+      : { ma: String(req.user || 'kho').trim().toLowerCase(), ten: String(req.userTen || req.user || 'Kho').trim(), vaiTro: 'THUKHO' };
     const ops = Array.isArray(req.ops) ? req.ops : (Array.isArray(req.queue) ? req.queue : []);
     return applyOps_(ops, user);
   },
 
   cleanData: function (req) {
     const user = auth_(req);
-    if (user.vaiTro !== 'ADMIN') throw new Error('Chỉ quản trị được làm sạch & chuẩn hóa dữ liệu');
+    if (!isAdmin_(user)) throw new Error('Chỉ quản trị được làm sạch & chuẩn hóa dữ liệu');
     const msg = cleanAndNormalizeSheetData();
-    return { message: msg, kho: getData_() };
+    return { message: msg, kho: getData_(user) };
   },
 
   archiveLogs: function (req) {
     const user = auth_(req);
-    if (user.vaiTro !== 'ADMIN') throw new Error('Chỉ quản trị được lưu trữ nhật ký');
+    if (!isAdmin_(user)) throw new Error('Chỉ quản trị được lưu trữ nhật ký');
     const msg = archiveOldLogs();
-    return { message: msg, kho: getData_() };
+    return { message: msg, kho: getData_(user) };
   },
 
   saveItem: function (req) {
-    auth_(req);
+    const user = auth_(req);
     const it = req.item || {};
     const ma = code_(it.ma);
     if (!ma) throw new Error('Thiếu mã mũ');
@@ -552,11 +554,11 @@ const API = {
     if (it.so !== undefined) itemPayload.so = mergeCsvCodes_(code_(it.so), '');
     if (it.slkh !== undefined) itemPayload.slkh = Math.max(0, Math.round(Number(it.slkh) || 0));
     upsertItemsBatch_([itemPayload], true);
-    return { kho: getData_() };
+    return { kho: getData_(user) };
   },
 
   syncItemsMeta: function (req) {
-    auth_(req);
+    const user = auth_(req);
     const list = Array.isArray(req.items) ? req.items : [];
     const normalized = [];
     list.forEach(function (it) {
@@ -579,11 +581,11 @@ const API = {
     if (normalized.length) {
       upsertItemsBatch_(normalized, 'sync');
     }
-    return req.skipReload ? { updated: normalized.length } : { updated: normalized.length, kho: getData_() };
+    return req.skipReload ? { updated: normalized.length } : { updated: normalized.length, kho: getData_(user) };
   },
 
   savePlanBatch: function (req) {
-    auth_(req);
+    const user = auth_(req);
     const list = Array.isArray(req.items) ? req.items : [];
     const normalized = [];
     list.forEach(function (it) {
@@ -607,12 +609,12 @@ const API = {
     if (normalized.length) {
       upsertItemsBatch_(normalized, 'plan');
     }
-    return req.skipReload ? { updated: normalized.length } : { updated: normalized.length, kho: getData_() };
+    return req.skipReload ? { updated: normalized.length } : { updated: normalized.length, kho: getData_(user) };
   },
 
   deleteItem: function (req) {
     const user = auth_(req);
-    if (user.vaiTro !== 'ADMIN') throw new Error('Chỉ quản trị được xoá mã mũ');
+    if (!isAdmin_(user)) throw new Error('Chỉ quản trị được xoá mã mũ');
     const ma = code_(req.ma);
     if (!ma) throw new Error('Thiếu mã mũ');
     const hasStock = rows_('Stock').some(function (s) { return code_(s.maVT) === ma && Number(s.soLuong) > 0; });
@@ -630,32 +632,32 @@ const API = {
     }
     if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, cols).clearContent();
     if (keep.length > 0) sh.getRange(2, 1, keep.length, cols).setValues(keep);
-    return { kho: getData_() };
+    return { kho: getData_(user) };
   },
 
   seedSample: function (req) {
     const user = auth_(req);
-    if (user.vaiTro !== 'ADMIN') throw new Error('Chỉ quản trị được nạp dữ liệu mẫu');
+    if (!isAdmin_(user)) throw new Error('Chỉ quản trị được nạp dữ liệu mẫu');
     const msg = seedSampleData();
-    return { message: msg, kho: getData_() };
+    return { message: msg, kho: getData_(user) };
   },
 
   clearSample: function (req) {
     const user = auth_(req);
-    if (user.vaiTro !== 'ADMIN') throw new Error('Chỉ quản trị được xoá dữ liệu');
+    if (!isAdmin_(user)) throw new Error('Chỉ quản trị được xoá dữ liệu');
     const msg = clearSampleData();
-    return { message: msg, kho: getData_() };
+    return { message: msg, kho: getData_(user) };
   },
 
   addUser: function (req) {
     const user = auth_(req);
-    if (user.vaiTro !== 'ADMIN') throw new Error('Chỉ quản trị được thêm người dùng');
+    if (!isAdmin_(user)) throw new Error('Chỉ quản trị được thêm người dùng');
     return taoNguoiDung(req.ma, req.ten, req.mk, req.vaiTro);
   },
 
   listUsers: function (req) {
     const user = auth_(req);
-    if (user.vaiTro !== 'ADMIN') throw new Error('Không có quyền');
+    if (!isAdmin_(user)) throw new Error('Không có quyền');
     return rows_('Users').map(function (u) { return { ma: u.ma, ten: u.ten, vaiTro: u.vaiTro, hoatDong: u.hoatDong }; });
   },
 
@@ -717,7 +719,8 @@ function processWarehouseAction(payload) {
   return { message: first.dup ? 'Giao dịch đã được ghi nhận trước đó' : 'Đồng bộ thành công', duplicate: !!first.dup, kho: res.kho };
 }
 
-function getData_() {
+function getData_(user) {
+  const canSeeLogs = !user || isAdmin_(user);
   const logs = sh_('Logs').getDataRange().getValues();
   const head = logs.shift() || SHEETS.Logs;
   const logPoSoMap = {};
@@ -798,7 +801,7 @@ function getData_() {
       }),
     logStats: logStats,
     slotNotes: slotNotes,
-    logs: recent,
+    logs: canSeeLogs ? recent : [],
     serverTime: fmt_(new Date())
   };
 }
@@ -1010,7 +1013,7 @@ function applyOps_(ops, user) {
     }
   }
 
-  return { results: results, kho: getData_() };
+  return { results: results, kho: getData_(user) };
 }
 
 /**
@@ -1191,6 +1194,10 @@ function cleanupSessions_(props) {
       }
     });
   } catch (e) {}
+}
+
+function isAdmin_(user) {
+  return String((user && user.vaiTro) || '').trim().toUpperCase() === 'ADMIN';
 }
 
 function auth_(req) {

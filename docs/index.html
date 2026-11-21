@@ -359,7 +359,10 @@ section{animation:fadeUp .22s var(--ease)}
 }
 
 .quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
-@media (min-width:768px){.quick-grid{grid-template-columns:repeat(4,1fr);gap:14px}}
+@media (min-width:768px){
+  .quick-grid{grid-template-columns:repeat(4,1fr);gap:14px}
+  .quick-grid.role-keeper{grid-template-columns:repeat(2,1fr)}
+}
 .q-tile{
   display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--rad);
   background:#FFFFFF;border:1px solid #E2E8F0;box-shadow:var(--shadow-xs);text-align:left;min-height:70px;
@@ -1063,7 +1066,7 @@ section{animation:fadeUp .22s var(--ease)}
 
     <div id="homePlanBanner" class="panel home-plan-card" style="cursor:pointer" data-go="plan"></div>
 
-    <div class="quick-grid">
+    <div class="quick-grid" id="homeQuickGrid">
       <button type="button" class="q-tile q-map" data-go="map">
         <div class="q-ico" data-ico="map"></div>
         <div><b>Sơ đồ 26 kệ</b><span>312 ô trực quan</span></div>
@@ -1072,17 +1075,17 @@ section{animation:fadeUp .22s var(--ease)}
         <div class="q-ico" data-ico="search"></div>
         <div><b>Tìm &amp; Danh mục</b><span>Tra vị trí · thêm mã mũ</span></div>
       </button>
-      <button type="button" class="q-tile q-log" data-go="log">
+      <button type="button" class="q-tile q-log" data-go="log" data-admin-only="1">
         <div class="q-ico" data-ico="history"></div>
         <div><b>Lịch sử thao tác</b><span>Nhật ký nhập / xuất</span></div>
       </button>
-      <button type="button" class="q-tile q-set" data-go="settings">
+      <button type="button" class="q-tile q-set" data-go="settings" data-admin-only="1">
         <div class="q-ico" data-ico="settings"></div>
         <div><b>Cài đặt &amp; In nhãn</b><span>Chẩn đoán · QR 26 kệ</span></div>
       </button>
     </div>
 
-    <div class="panel" style="border:1px solid #E2E8F0">
+    <div class="panel" id="homeLogsPanel" data-admin-only="1" style="border:1px solid #E2E8F0">
       <div class="panel-head">
         <h2 class="panel-title">Thao tác gần đây</h2>
         <button type="button" class="btn btn-ghost btn-sm" data-go="log">Xem tất cả</button>
@@ -1464,7 +1467,7 @@ section{animation:fadeUp .22s var(--ease)}
 
   <!-- CÀI ĐẶT & SETUP DOCTOR -->
   <section id="vSettings" hidden>
-    <div class="panel">
+    <div class="panel" id="doctorCard">
       <div class="panel-head">
         <h2 class="panel-title">Kiểm tra hệ thống (Setup Doctor)</h2>
         <button type="button" class="btn btn-ghost btn-sm" id="btnRunDoctor">Kiểm tra lại</button>
@@ -1472,7 +1475,7 @@ section{animation:fadeUp .22s var(--ease)}
       <div class="doc-grid" id="doctorGrid"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="apiCard">
       <div class="panel-head"><h2 class="panel-title">Kết nối Google Sheet, Apps Script &amp; Camera GitHub</h2></div>
       <label class="f-lbl" for="setApi">1. Link Web App Apps Script (kết thúc bằng /exec)</label>
       <input class="inp mono" id="setApi" placeholder="https://script.google.com/macros/s/…/exec">
@@ -1499,7 +1502,7 @@ section{animation:fadeUp .22s var(--ease)}
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="deviceCard">
       <div class="panel-head"><h2 class="panel-title">Thiết bị &amp; thao tác</h2></div>
       <label class="switch-row">
         <span><b>Âm thanh &amp; rung khi quét</b><span class="block small muted">Báo đúng / sai không cần nhìn màn hình</span></span>
@@ -1511,7 +1514,7 @@ section{animation:fadeUp .22s var(--ease)}
       </label>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="printQrCard">
       <div class="panel-head"><h2 class="panel-title">In nhãn QR vị trí (26 kệ × 12 ô)</h2></div>
       <div class="small muted">Mỗi kệ in 1 trang A4 gồm 1 nhãn đầu kệ lớn và 12 nhãn ô (KE:K01-T1-O1 … KE:K01-T3-O4).</div>
       <div class="row" style="margin-top:10px">
@@ -1528,12 +1531,20 @@ section{animation:fadeUp .22s var(--ease)}
     </div>
 
     <div class="panel" id="adminCard" hidden>
-      <div class="panel-head"><h2 class="panel-title">Quản lý tài khoản</h2></div>
+      <div class="panel-head"><h2 class="panel-title">Quản lý tài khoản &amp; Phân quyền</h2></div>
+      <div class="small muted" style="margin-bottom:10px;padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid var(--line)">
+        <b>Phân quyền rõ ràng:</b><br>
+        • <b>Thủ kho (THUKHO):</b> Nhập kho, Xuất kho, Kiểm kê &amp; Đối chiếu, Sơ đồ 26 kệ, Tra cứu &amp; Danh mục (thêm/sửa), Kiểm soát Kế hoạch (SLKH). <b>Không thấy</b> mục Hệ thống (Nhật ký thao tác, Cài đặt &amp; Kết nối, Quản lý tài khoản, Xoá/Làm sạch dữ liệu).<br>
+        • <b>Quản trị (ADMIN):</b> Toàn quyền nghiệp vụ kho + mục <b>Hệ thống</b> (Nhật ký, Kết nối Sheet, Làm sạch, Xoá mã mũ, Tạo &amp; phân quyền tài khoản).
+      </div>
       <div class="grid-2">
-        <input class="inp" id="nuMa" placeholder="Mã NV (VD: cn01)">
+        <input class="inp" id="nuMa" placeholder="Mã NV (VD: tk01)">
         <input class="inp" id="nuTen" placeholder="Họ tên">
         <input class="inp" id="nuMk" placeholder="Mật khẩu">
-        <select class="inp" id="nuRole"><option value="WORKER">Công nhân</option><option value="ADMIN">Quản trị</option></select>
+        <select class="inp" id="nuRole">
+          <option value="THUKHO">Thủ kho (Nghiệp vụ kho &amp; SLKH)</option>
+          <option value="ADMIN">Quản trị (ADMIN — Toàn quyền + Hệ thống)</option>
+        </select>
       </div>
       <button type="button" class="btn btn-pri btn-full" id="btnAddUser" style="margin-top:10px">Thêm / đổi mật khẩu</button>
       <div id="userList" class="list" style="margin-top:12px"></div>
@@ -1726,15 +1737,15 @@ function mountStaticIcons(){
     { grp:'Giám sát & Báo cáo', items:[
       { id:'plan',   lbl:'Kiểm soát Kế hoạch', ico:'target', badge:'SLKH' }
     ]},
-    { grp:'Hệ thống', items:[
+    { grp:'Hệ thống', adminOnly:true, items:[
       { id:'log',      lbl:'Nhật ký thao tác', ico:'history' },
       { id:'settings', lbl:'Cài đặt & Kết nối', ico:'settings' }
     ]}
   ];
   if ($('#sideMenu')) {
     $('#sideMenu').innerHTML = SIDE_GROUPS.map(g =>
-      '<div class="side-grp">' + g.grp + '</div>' +
-      g.items.map(n => '<button type="button" class="side-btn" data-nav="' + n.id + '" title="' + n.lbl + '">' +
+      '<div class="side-grp"' + (g.adminOnly ? ' data-admin-only="1"' : '') + '>' + g.grp + '</div>' +
+      g.items.map(n => '<button type="button" class="side-btn" data-nav="' + n.id + '"' + (g.adminOnly ? ' data-admin-only="1"' : '') + ' title="' + n.lbl + '">' +
         icon(n.ico) + '<span>' + n.lbl + '</span>' +
         (n.badge ? '<em class="side-badge" style="font-style:normal">' + n.badge + '</em>' : '') +
       '</button>').join('')
@@ -1783,6 +1794,22 @@ let ERRS = load(LS.err, []);
 let soundOn = load(LS.sound, true);
 let autoCam = load(LS.cam, true);
 let view = '', syncing = false, online = navigator.onLine;
+
+function isAdminUser(u){
+  const usr = u || (SESS && SESS.user);
+  return String((usr && usr.vaiTro) || '').trim().toUpperCase() === 'ADMIN';
+}
+function roleLabel(vaiTro){
+  const r = String(vaiTro || '').trim().toUpperCase();
+  if (r === 'ADMIN') return 'Quản trị (ADMIN)';
+  return 'Thủ kho';
+}
+function applyRoleUi(){
+  const isAdmin = isAdminUser();
+  $$('[data-admin-only="1"]').forEach(el => { el.hidden = !isAdmin; });
+  const qg = $('#homeQuickGrid');
+  if (qg) qg.classList.toggle('role-keeper', !isAdmin);
+}
 
 /* ---------------------- Tồn kho & Danh mục ---------------------- */
 const skey = (ke, t, o, ma) => String(ke || '').trim().toUpperCase() + '|' + Number(t || 0) + '|' + Number(o || 0) + '|' + String(ma || '').trim().toUpperCase().replace(/^(VT|MU):\s*/, '');
@@ -2451,18 +2478,23 @@ const TITLES = {
   find:'Tra cứu & Danh mục', map:'Sơ đồ 26 kệ', log:'Nhật ký thao tác', settings:'Cài đặt & Kết nối'
 };
 function go(v, arg){
+  if (SESS && !isAdminUser() && (v === 'log' || v === 'settings')) {
+    toast('Chức năng này chỉ dành cho Quản trị (ADMIN)', 'err');
+    v = 'home';
+  }
   hideAllLiveSuggestions();
   camStop(); camHandler = null;
   view = v;
   ['vLogin','vHome','vFlow','vPlan','vFind','vMap','vLog','vSettings'].forEach(id => { if ($('#' + id)) $('#' + id).hidden = true; });
   const loggedIn = !!SESS && v !== 'login';
   if ($('#sideNav')) $('#sideNav').hidden = !loggedIn;
-  if ($('#sideUser') && SESS) $('#sideUser').textContent = SESS.user.ten + ' · ' + SESS.user.vaiTro;
+  if ($('#sideUser') && SESS) $('#sideUser').textContent = SESS.user.ten + ' · ' + roleLabel(SESS.user.vaiTro);
   if ($('#topBtnLogout')) $('#topBtnLogout').hidden = !loggedIn;
   $('#topNav').hidden = !loggedIn;
   $('#bottomNav').hidden = !loggedIn;
   $('#btnBack').hidden = v === 'home' || v === 'login';
   $('#title').textContent = TITLES[v] || 'Kho Mũ TBS';
+  applyRoleUi();
 
   const navKey = (v === 'NHAP' || v === 'XUAT' || v === 'KIEMKE') ? 'NHAP' : v;
   $$('#bottomNav [data-nav], #topNav [data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === navKey));
@@ -2545,8 +2577,16 @@ function renderHome(){
     }
   }
 
-  const recent = getAllLogs().slice(0, 5);
-  $('#homeLogs').innerHTML = recent.map(logRowHtml).join('') || '<div class="small muted">Chưa có thao tác nào. Nhấn Nhập kho để bắt đầu.</div>';
+  const isAdmin = isAdminUser();
+  if ($('#homeLogsPanel')) $('#homeLogsPanel').hidden = !isAdmin;
+  if ($('#homeLogs')) {
+    if (isAdmin) {
+      const recent = getAllLogs().slice(0, 5);
+      $('#homeLogs').innerHTML = recent.map(logRowHtml).join('') || '<div class="small muted">Chưa có thao tác nào. Nhấn Nhập kho để bắt đầu.</div>';
+    } else {
+      $('#homeLogs').innerHTML = '';
+    }
+  }
 }
 
 /* =====================================================================
@@ -5888,7 +5928,7 @@ function renderCatalog(){
       itemMetaBadgesHtml(ma) +
       '<div class="xs muted">' + [meta.dvt || 'đôi', meta.slkh > 0 && ('SLKH: ' + fmt(meta.slkh)), it.ghiChu && ('Ghi chú: ' + it.ghiChu)].filter(Boolean).join(' · ') + '</div></div>' +
       '<button type="button" class="btn btn-ghost btn-sm" data-edit="' + esc(ma) + '" aria-label="Sửa">' + icon('edit') + '</button>' +
-      (SESS && SESS.user.vaiTro === 'ADMIN' ? '<button type="button" class="btn btn-ghost btn-sm" data-del="' + esc(ma) + '" style="color:var(--c-err)" aria-label="Xoá">' + icon('trash') + '</button>' : '') +
+      (isAdminUser() ? '<button type="button" class="btn btn-ghost btn-sm" data-del="' + esc(ma) + '" style="color:var(--c-err)" aria-label="Xoá">' + icon('trash') + '</button>' : '') +
     '</div>';
   }).join('') || '<div class="small muted">Chưa có mã mũ trong danh mục. Khi nhập kho mã mới sẽ tự thêm vào đây.</div>';
 
@@ -6201,7 +6241,7 @@ function getFilteredPlanRows(){
 
 function renderPlan(){
   if ($('#planRoleBadge')) {
-    $('#planRoleBadge').textContent = SESS ? (SESS.user.ten + ' · ' + SESS.user.vaiTro) : 'Khách';
+    $('#planRoleBadge').textContent = SESS ? (SESS.user.ten + ' · ' + roleLabel(SESS.user.vaiTro)) : 'Khách';
   }
   const { allRows, filtered } = getFilteredPlanRows();
   const s = getPlanControlSummary(allRows);
@@ -6512,7 +6552,7 @@ function exportPlanXlsx(){
   if (!filtered.length) { toast('Chưa có dữ liệu để xuất', 'err'); return; }
   if (typeof XLSX === 'undefined') { exportPlanCsv(); return; }
   const { head, body } = planExportRows(filtered);
-  const userTxt = SESS ? (SESS.user.ten + ' (' + SESS.user.vaiTro + ')') : 'Kho Mũ TBS';
+  const userTxt = SESS ? (SESS.user.ten + ' · ' + roleLabel(SESS.user.vaiTro)) : 'Kho Mũ TBS';
   const aoa = [
     ['BÁO CÁO KIỂM SOÁT SỐ LƯỢNG KẾ HOẠCH (SLKH) — KHO MŨ TBS'],
     ['Ngày xuất: ' + new Date().toLocaleString('vi-VN') + ' · Người lập: ' + userTxt],
@@ -6531,7 +6571,7 @@ function printPlanReport(){
   const s = getPlanControlSummary(filtered);
   const w = window.open('', '_blank', 'width=1100,height=800');
   if (!w) { toast('Trình duyệt đang chặn cửa sổ in — hãy cho phép popup', 'err'); return; }
-  const who = SESS ? (SESS.user.ten + ' (' + SESS.user.vaiTro + ')') : 'Thủ kho';
+  const who = SESS ? (SESS.user.ten + ' · ' + roleLabel(SESS.user.vaiTro)) : 'Thủ kho';
   const rowsHtml = filtered.map((r, i) =>
     '<tr>' +
       '<td>' + (i + 1) + '</td>' +
@@ -6725,13 +6765,18 @@ function renderSettings(){
   $('#setApi').value = API;
   if ($('#setGhUrl')) $('#setGhUrl').value = GH_URL;
   $('#setSound').checked = soundOn; $('#setAutoCam').checked = autoCam;
-  $('#whoami').textContent = SESS ? 'Đăng nhập: ' + SESS.user.ten + ' (' + SESS.user.ma + ' · ' + SESS.user.vaiTro + ')' : 'Chưa đăng nhập';
+  $('#whoami').textContent = SESS ? 'Đăng nhập: ' + SESS.user.ten + ' (' + SESS.user.ma + ' · ' + roleLabel(SESS.user.vaiTro) + ')' : 'Chưa đăng nhập';
   $('#btnLogout').hidden = !SESS;
-  const isAdmin = !!(SESS && SESS.user.vaiTro === 'ADMIN');
+  const isAdmin = isAdminUser();
+  if ($('#doctorCard')) $('#doctorCard').hidden = !isAdmin;
+  if ($('#sampleCard')) $('#sampleCard').hidden = !isAdmin;
+  if ($('#deviceCard')) $('#deviceCard').hidden = !isAdmin;
+  if ($('#printQrCard')) $('#printQrCard').hidden = !isAdmin;
   $('#adminCard').hidden = !(isAdmin && API);
-  $('#sampleCard').hidden = !SESS;
-  if (!$('#adminCard').hidden) loadUsers();
-  runDoctor();
+  if (isAdmin) {
+    if (!$('#adminCard').hidden) loadUsers();
+    runDoctor();
+  }
 }
 $('#btnRunDoctor').onclick = runDoctor;
 $('#setSound').onchange = e => { soundOn = e.target.checked; save(LS.sound, soundOn); beep(true); };
@@ -6871,7 +6916,7 @@ if ($('#btnLogout')) $('#btnLogout').onclick = doLogout;
 async function loadUsers(){
   try {
     const list = await post('listUsers');
-    $('#userList').innerHTML = list.map(u => '<div class="li"><div class="li-grow"><b>' + esc(u.ma) + '</b> · ' + esc(u.ten) + '</div><span class="tag tag-ok">' + esc(u.vaiTro) + '</span></div>').join('');
+    $('#userList').innerHTML = list.map(u => '<div class="li"><div class="li-grow"><b>' + esc(u.ma) + '</b> · ' + esc(u.ten) + '</div><span class="tag tag-ok">' + esc(roleLabel(u.vaiTro)) + '</span></div>').join('');
   } catch (e) { $('#userList').textContent = e.message; }
 }
 $('#btnAddUser').onclick = async () => {

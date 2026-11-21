@@ -798,4 +798,87 @@ assert.strictEqual(vm.runInContext('mapSel', sandbox), 'K01');
 assert.ok(getMockEl('#mapRacks').innerHTML.includes('blink'), 'Single-object renderMap arg must blink cell');
 console.log('Test 14 (Mobile header cleanup, single camera, Tra cứu full cards + direct map blink): OK');
 
+// Test 15: Phân quyền Thủ kho (THUKHO/WORKER) vs Quản trị (ADMIN) — Backend Code.gs + Frontend Index.html
+// 15a. Backend RBAC in Code.gs
+const gasRbac = createGasSandbox([
+  ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu', 'po', 'so', 'slkh'],
+  ['RB20617', 'DIRTZILLA DMX', 'KHUON-DZ', "MEN'S", '', 'đôi', '', 'RB20617', '3170061111', 36]
+]);
+gasRbac.sheetsData.Logs = [
+  ['thoiGian', 'loai', 'ke', 'tang', 'o', 'maVT', 'soLuong', 'nguoi', 'ghiChu', 'clientId'],
+  [new Date(), 'NHAP', 'K01', 1, 1, 'RB20617', 40, 'tk01', 'PX A2', 'tx_r1']
+];
+assert.strictEqual(vm.runInContext(`isAdmin_({ vaiTro: 'ADMIN' })`, gasRbac.gasSandbox), true);
+assert.strictEqual(vm.runInContext(`isAdmin_({ vaiTro: 'THUKHO' })`, gasRbac.gasSandbox), false);
+assert.strictEqual(vm.runInContext(`isAdmin_({ vaiTro: 'WORKER' })`, gasRbac.gasSandbox), false);
+
+const dataThuKho = vm.runInContext(`getData_({ ma: 'tk01', vaiTro: 'THUKHO' })`, gasRbac.gasSandbox);
+assert.strictEqual(dataThuKho.logs.length, 0, 'THUKHO must not receive raw system logs');
+assert.strictEqual(dataThuKho.logStats.RB20617.nhap, 40, 'THUKHO must still receive aggregated logStats for SLKH');
+
+const dataAdmin = vm.runInContext(`getData_({ ma: 'admin', vaiTro: 'ADMIN' })`, gasRbac.gasSandbox);
+assert.strictEqual(dataAdmin.logs.length, 1, 'ADMIN must receive system logs');
+
+vm.runInContext(`auth_ = () => ({ ma: 'tk01', ten: 'Thủ kho 1', vaiTro: 'THUKHO' });`, gasRbac.gasSandbox);
+['cleanData', 'archiveLogs', 'deleteItem', 'listUsers', 'addUser'].forEach(fn => {
+  assert.throws(() => vm.runInContext(`API.${fn}({ ma: 'RB20617', mk: '123' })`, gasRbac.gasSandbox), /quản trị|Không có quyền/i, `API.${fn} must reject THUKHO`);
+});
+vm.runInContext(`auth_ = () => ({ ma: 'cn01', ten: 'Worker cũ', vaiTro: 'WORKER' });`, gasRbac.gasSandbox);
+['cleanData', 'listUsers'].forEach(fn => {
+  assert.throws(() => vm.runInContext(`API.${fn}({})`, gasRbac.gasSandbox), /quản trị|Không có quyền/i, `API.${fn} must reject legacy WORKER`);
+});
+vm.runInContext(`auth_ = () => ({ ma: 'tk01', ten: 'Thủ kho 1', vaiTro: 'THUKHO' });`, gasRbac.gasSandbox);
+const tkPlanRes = vm.runInContext(`API.savePlanBatch({ items: [{ ma: 'RB20617', slkh: 50 }] })`, gasRbac.gasSandbox);
+assert.strictEqual(tkPlanRes.updated, 1, 'THUKHO must still be allowed to manage SLKH plan');
+assert.strictEqual(tkPlanRes.kho.logs.length, 0, 'Response for THUKHO must still omit logs');
+
+// 15b. Frontend RBAC HTML markers & route guards
+assert.ok(html.includes('adminOnly:true') && html.includes("id:'log'") && html.includes("id:'settings'"), 'Hệ thống group must be flagged adminOnly:true');
+assert.ok(html.includes('data-go="log" data-admin-only="1"') && html.includes('data-go="settings" data-admin-only="1"'), 'Home system shortcuts must carry data-admin-only="1"');
+assert.ok(html.includes('id="homeLogsPanel" data-admin-only="1"'), 'Home recent logs panel must carry data-admin-only="1"');
+
+assert.strictEqual(sandbox.roleLabel('ADMIN'), 'Quản trị (ADMIN)');
+assert.strictEqual(sandbox.roleLabel('THUKHO'), 'Thủ kho');
+assert.strictEqual(sandbox.roleLabel('WORKER'), 'Thủ kho');
+
+// Test as THUKHO
+vm.runInContext(`API = ''; SESS = { token: 't', user: { ma: 'tk01', ten: 'Thủ kho 1', vaiTro: 'THUKHO' } };`, sandbox);
+sandbox.go('log');
+assert.strictEqual(vm.runInContext('view', sandbox), 'home', 'THUKHO accessing log must be redirected to home');
+assert.strictEqual(getMockEl('#vLog').hidden, true, '#vLog must remain hidden for THUKHO');
+assert.ok(getMockEl('#toast').textContent.includes('Quản trị'), 'Blocked access must notify user');
+
+sandbox.go('settings');
+assert.strictEqual(vm.runInContext('view', sandbox), 'home', 'THUKHO accessing settings must be redirected to home');
+assert.strictEqual(getMockEl('#vSettings').hidden, true, '#vSettings must remain hidden for THUKHO');
+
+sandbox.renderHome();
+assert.strictEqual(getMockEl('#homeLogsPanel').hidden, true, '#homeLogsPanel must stay hidden for THUKHO');
+assert.strictEqual(getMockEl('#homeLogs').innerHTML, '', '#homeLogs must stay empty for THUKHO');
+
+['plan', 'map', 'find', 'NHAP', 'XUAT', 'KIEMKE'].forEach(allowed => {
+  sandbox.go(allowed);
+  assert.strictEqual(vm.runInContext('view', sandbox), allowed, `THUKHO must be allowed on view ${allowed}`);
+});
+
+// Test as legacy WORKER
+vm.runInContext(`SESS = { token: 't', user: { ma: 'cn01', ten: 'Kho 1', vaiTro: 'WORKER' } };`, sandbox);
+sandbox.go('log');
+assert.strictEqual(vm.runInContext('view', sandbox), 'home', 'Legacy WORKER accessing log must be redirected to home');
+sandbox.go('settings');
+assert.strictEqual(vm.runInContext('view', sandbox), 'home', 'Legacy WORKER accessing settings must be redirected to home');
+
+// Test as ADMIN
+vm.runInContext(`SESS = { token: 't', user: { ma: 'admin', ten: 'Quản trị', vaiTro: 'ADMIN' } };`, sandbox);
+sandbox.go('log');
+assert.strictEqual(vm.runInContext('view', sandbox), 'log', 'ADMIN must be able to view logs');
+assert.strictEqual(getMockEl('#vLog').hidden, false);
+sandbox.go('settings');
+assert.strictEqual(vm.runInContext('view', sandbox), 'settings', 'ADMIN must be able to view settings');
+assert.strictEqual(getMockEl('#vSettings').hidden, false);
+sandbox.go('home');
+assert.strictEqual(getMockEl('#homeLogsPanel').hidden, false, 'ADMIN must see #homeLogsPanel on home');
+
+console.log('Test 15 (Phân quyền Thủ kho vs Quản trị ADMIN — Backend Code.gs & Frontend guards/UI): OK');
+
 console.log('\nALL TESTS PASSED SUCCESSFULLY! 🚀');
