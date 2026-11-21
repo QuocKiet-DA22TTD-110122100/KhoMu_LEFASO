@@ -905,6 +905,7 @@ assert.ok(html.includes("id:'KIEMKE'") && html.includes('noWorker:true'), 'Sideb
 assert.ok(html.includes("grp:'Giám sát & Báo cáo', noWorker:true"), 'Sidebar Giám sát & Báo cáo group must be flagged noWorker:true');
 assert.ok(html.includes("{ id:'plan', lbl:'Kế hoạch', ico:'target', noWorker:true }"), 'NAV_ITEMS plan button must be flagged noWorker:true');
 assert.ok(html.includes('<option value="WORKER">'), 'User management role select must include WORKER option');
+assert.ok(!html.includes('id="btnLoginSet"') && !html.includes('id="btnLoginDemo"'), 'Login screen must not include Cài đặt kết nối Sheet or Xem thử Offline buttons');
 
 assert.strictEqual(sandbox.roleLabel('ADMIN'), 'Quản trị (ADMIN)');
 assert.strictEqual(sandbox.roleLabel('THUKHO'), 'Thủ kho');
@@ -1003,6 +1004,12 @@ assert.strictEqual(vm.runInContext('view', sandbox), 'settings', 'ADMIN must be 
 assert.strictEqual(getMockEl('#vSettings').hidden, false);
 sandbox.go('home');
 assert.strictEqual(getMockEl('#homeLogsPanel').hidden, false, 'ADMIN must see #homeLogsPanel on home');
+
+// Test unauthenticated guard
+vm.runInContext(`SESS = null;`, sandbox);
+sandbox.go('settings');
+assert.strictEqual(vm.runInContext('view', sandbox), 'login', 'Unauthenticated access to settings must redirect to login');
+assert.strictEqual(getMockEl('#vSettings').hidden, true, '#vSettings must remain hidden when unauthenticated');
 
 console.log('Test 15 (Phân quyền 3 vai trò Công nhân WORKER vs Thủ kho THUKHO vs Quản trị ADMIN): OK');
 

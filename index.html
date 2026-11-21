@@ -1001,10 +1001,6 @@ section{animation:fadeUp .22s var(--ease)}
           <button type="button" class="pw-eye" id="btnTogglePw" aria-label="Hiện/ẩn mật khẩu"></button>
         </div>
         <button type="button" class="btn btn-pri btn-full btn-huge" id="btnLogin" style="margin-top:18px">Vào kho</button>
-        <div class="row" style="margin-top:10px">
-          <button type="button" class="btn btn-ghost" id="btnLoginSet" style="flex:1">Cài đặt kết nối Sheet</button>
-          <button type="button" class="btn btn-ghost" id="btnLoginDemo" style="flex:1">Xem thử Offline</button>
-        </div>
       </div>
     </div>
   </section>
@@ -1779,7 +1775,7 @@ function mountStaticIcons(){
 const DEFAULT_API = 'https://script.google.com/macros/s/AKfycbxxPGIEsz5raJMYCQzdIrhNDO1Ecqz13vKPxc5yd0c0LSjlB1EpKG8KhGCpw0OEB91Pgg/exec';
 const DEFAULT_GH_URL = 'https://quockiet-da22ttd-110122100.github.io/KhoMu_LEFASO/';
 const savedApi = localStorage.getItem(LS.api);
-let API = savedApi !== null ? savedApi : DEFAULT_API;
+let API = (savedApi && savedApi.trim()) ? savedApi.trim() : DEFAULT_API;
 let storedGh = localStorage.getItem('km.gh');
 if (storedGh) {
   if (storedGh.includes('/KhoMu/') && !storedGh.includes('/KhoMu_LEFASO/')) {
@@ -2526,6 +2522,9 @@ const TITLES = {
   find:'Tra cứu & Danh mục', map:'Sơ đồ 26 kệ', log:'Nhật ký thao tác', settings:'Cài đặt & Kết nối'
 };
 function go(v, arg){
+  if (!SESS && v !== 'login') {
+    v = 'login';
+  }
   if (SESS && !isAdminUser() && (v === 'log' || v === 'settings')) {
     toast('Chức năng này chỉ dành cho Quản trị (ADMIN)', 'err');
     v = 'home';
@@ -7066,13 +7065,6 @@ $('#btnTogglePw').onclick = () => {
   const inp = $('#lgMk'), show = inp.type === 'password';
   inp.type = show ? 'text' : 'password';
   $('#btnTogglePw').innerHTML = icon(show ? 'eye-off' : 'eye');
-};
-$('#btnLoginSet').onclick = () => go('settings');
-if ($('#btnLoginDemo')) $('#btnLoginDemo').onclick = () => {
-  API = ''; localStorage.setItem(LS.api, '');
-  seedLocalDemoData();
-  SESS = { token:'demo', user:{ ma:'admin', ten:'Quản trị', vaiTro:'ADMIN' } };
-  save(LS.sess, SESS); go('home');
 };
 $('#lgMk').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnLogin').click(); });
 $('#btnLogin').onclick = async () => {
