@@ -35,6 +35,13 @@ const getMockEl = (sel) => {
   return elCache.get(sel);
 };
 
+const makeStepEl = () => {
+  const s = createEl();
+  s.querySelector = () => createEl();
+  return s;
+};
+const mockStepEls = [makeStepEl(), makeStepEl(), makeStepEl()];
+
 // Mock browser environment
 const domMock = {
   window: { addEventListener: () => {} },
@@ -42,7 +49,7 @@ const domMock = {
     addEventListener: () => {},
     readyState: 'complete',
     body: { style: {} },
-    querySelectorAll: () => [],
+    querySelectorAll: (sel) => (sel === '#steps .f-step' ? mockStepEls : []),
     querySelector: getMockEl
   },
   localStorage: {
@@ -299,7 +306,7 @@ function createGasSandbox(initialItems) {
 }
 
 const { gasSandbox, sheetsData } = createGasSandbox();
-assert.deepStrictEqual(Array.from(vm.runInContext('SHEETS.Items', gasSandbox)), ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu', 'po', 'so']);
+assert.deepStrictEqual(Array.from(vm.runInContext('SHEETS.Items', gasSandbox)), ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu', 'po', 'so', 'slkh']);
 
 // extractPoSoFromNote_ & mergeCsvCodes_
 const ex1 = gasSandbox.extractPoSoFromNote_('Cân đối theo file MŨ BTP · PO: PO2601 · SO: SO8801 · Hệ: H1');
@@ -312,9 +319,9 @@ assert.strictEqual(exFalse.so, '');
 
 assert.strictEqual(gasSandbox.mergeCsvCodes_('PO1, 0, PO2', 'po2; PO3'), 'PO1, PO2, PO3');
 
-// sh_ upgrades 7-column Items header to 9 columns
+// sh_ upgrades 7-column Items header to 10 columns (ending with slkh)
 gasSandbox.sh_('Items');
-assert.deepStrictEqual(sheetsData.Items[0], ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu', 'po', 'so']);
+assert.deepStrictEqual(sheetsData.Items[0], ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu', 'po', 'so', 'slkh']);
 
 // upsertItemsBatch_ mode false
 gasSandbox.upsertItemsBatch_([
@@ -475,5 +482,320 @@ assert.ok(firstTr, 'Should render rows in #kkReconBody');
 const bodyTdCount = [...firstTr[1].matchAll(/<td\b/g)].length;
 assert.strictEqual(bodyTdCount, 20, 'tbody td count must match thead 20 columns');
 console.log('Test 10 (Real screenshot data recon, catalog sync, PO/SO search, 20-col table): OK');
+
+// Test 11: renderQty NHAP/XUAT rules (Chuyền gò 12 Gò Line + 4 Gò truyền thống, only PX A2/B2, positive qty buttons only)
+vm.runInContext(`F = { mode: 'NHAP', step: 'qty', loc: { ke: 'K01', tang: 1, o: 1 }, ma: 'RB20617' }; renderQty();`, sandbox);
+const nhapQtyHtml = getMockEl('#qtyArea').innerHTML;
+assert.ok(!nhapQtyHtml.includes('qtyChuyen'), 'NHAP must not show qtyChuyen');
+assert.ok(!nhapQtyHtml.includes('Chuyền 1'), 'NHAP must not show Chuyen chips');
+assert.ok(!/PX\s*[AB]1/.test(nhapQtyHtml), 'NHAP must not contain PX A1 or PX B1');
+assert.ok(nhapQtyHtml.includes('PX A2') && nhapQtyHtml.includes('PX B2'), 'NHAP must show PX A2 and PX B2');
+assert.ok(!/data-d="-/.test(nhapQtyHtml), 'NHAP must not have negative delta buttons');
+assert.ok(nhapQtyHtml.includes('data-d="1"') && nhapQtyHtml.includes('data-d="500"'), 'NHAP must have positive delta buttons +1..+500');
+
+vm.runInContext(`F = { mode: 'XUAT', step: 'qty', loc: { ke: 'K01', tang: 1, o: 1 }, ma: 'RB20617' }; renderQty();`, sandbox);
+const xuatQtyHtml = getMockEl('#qtyArea').innerHTML;
+assert.ok(xuatQtyHtml.includes('qtyChuyen'), 'XUAT must keep qtyChuyen');
+assert.ok(xuatQtyHtml.includes('<option value="">Chuyền gò</option>'), 'XUAT dropdown must say Chuyền gò');
+assert.ok(!xuatQtyHtml.includes('Chuyền may'), 'XUAT must not say Chuyền may');
+for (let i = 1; i <= 12; i++) {
+  assert.ok(xuatQtyHtml.includes('<option value="Gò Line ' + i + '">Gò Line ' + i + '</option>'), 'XUAT must include Gò Line ' + i);
+}
+assert.ok(!xuatQtyHtml.includes('Gò Line 13'), 'XUAT must have at most 12 Gò Line options');
+for (let i = 1; i <= 4; i++) {
+  assert.ok(xuatQtyHtml.includes('<option value="Gò truyền thống ' + i + '">Gò truyền thống ' + i + '</option>'), 'XUAT must include Gò truyền thống ' + i);
+}
+assert.ok(!xuatQtyHtml.includes('Gò truyền thống 5'), 'XUAT must have at most 4 Gò truyền thống options');
+assert.ok(xuatQtyHtml.includes('qtyAfterPreview'), 'XUAT must render live subtraction preview');
+assert.ok(xuatQtyHtml.includes('PX A2') && xuatQtyHtml.includes('PX B2'), 'XUAT must show PX A2 and PX B2');
+assert.ok(!/PX\s*[AB]1/.test(xuatQtyHtml), 'XUAT must not contain PX A1 or PX B1');
+assert.ok(!/data-d="-/.test(xuatQtyHtml), 'XUAT must not have negative delta buttons');
+
+assert.ok(!/PX\s*[AB]1/.test(html), 'docs/index.html must not contain PX A1 or PX B1 anywhere');
+assert.ok(!/Chuyền may/i.test(html), 'docs/index.html must not contain Chuyền may anywhere');
+console.log('Test 11 (renderQty NHAP/XUAT: Chuyền gò 12 Line + 4 TT, only PX A2/B2, positive qty buttons only): OK');
+
+// Test 12: Xuất kho subtraction (40 - 36 = 4) across frontend single-bin/multi-bin, backend Code.gs duplicates, and ZaloKho.gs
+const resetQtyInputs = () => {
+  getMockEl('#qty').value = '';
+  getMockEl('#qtyNote').value = '';
+  getMockEl('#qtyChuyen').value = '';
+  getMockEl('#qtyPx').value = '';
+  getMockEl('#qtyThieu').value = '';
+};
+
+// 12a. Frontend single-bin 40 - 36 = 4 with Gò Line 3 + PX A2
+resetQtyInputs();
+vm.runInContext(`
+  API = '';
+  SESS = { token: 't', user: { ma: 'kho', ten: 'Thủ kho' } };
+  Q = [];
+  ERRS = [];
+  K.stock = [{ ke: 'K01', tang: 1, o: 1, maVT: 'RB20617', soLuong: 40 }];
+  F = { mode: 'XUAT', step: 'qty', loc: { ke: 'K01', tang: 1, o: 1 }, ma: 'RB20617' };
+  renderQty();
+`, sandbox);
+getMockEl('#qty').value = '36';
+getMockEl('#qtyChuyen').value = 'Gò Line 3';
+getMockEl('#qtyPx').value = 'A2';
+sandbox.saveQty();
+const after12a = vm.runInContext(`stockRows()`, sandbox);
+assert.strictEqual(after12a.length, 1);
+assert.strictEqual(after12a[0].soLuong, 4, '40 - 36 must leave 4 in bin');
+const toast12a = getMockEl('#toast').textContent;
+assert.ok(toast12a.includes('Đã xuất 36') && toast12a.includes('Còn lại: 4'), 'Toast must confirm 36 exported and 4 left, got: ' + toast12a);
+const log12a = vm.runInContext(`K.logs[0]`, sandbox);
+assert.strictEqual(log12a.ghiChu, 'Gò Line 3 · PX A2');
+
+// 12b. Frontend single-bin 40 - 36 = 4 even when #qtyChuyen is not selected
+resetQtyInputs();
+vm.runInContext(`
+  Q = [];
+  K.stock = [{ ke: 'K01', tang: 1, o: 1, maVT: 'RB20617', soLuong: 40 }];
+  F = { mode: 'XUAT', step: 'qty', loc: { ke: 'K01', tang: 1, o: 1 }, ma: 'RB20617' };
+  renderQty();
+`, sandbox);
+getMockEl('#qty').value = '36';
+sandbox.saveQty();
+const after12b = vm.runInContext(`stockRows()`, sandbox);
+assert.strictEqual(after12b[0].soLuong, 4, 'Exporting 36 out of 40 without Chuyền selected must still subtract to 4');
+
+// 12c. Frontend multi-bin (4 in O1 + 36 in O2 = 40 total), export 36 from O1 -> O1 empty, O2 = 4
+resetQtyInputs();
+vm.runInContext(`
+  Q = [];
+  K.stock = [
+    { ke: 'K01', tang: 1, o: 1, maVT: 'W44073', soLuong: 4 },
+    { ke: 'K01', tang: 1, o: 2, maVT: 'W44073', soLuong: 36 }
+  ];
+  F = { mode: 'XUAT', step: 'qty', loc: { ke: 'K01', tang: 1, o: 1 }, ma: 'W44073' };
+  renderQty();
+`, sandbox);
+getMockEl('#qty').value = '36';
+getMockEl('#qtyChuyen').value = 'Gò truyền thống 2';
+getMockEl('#qtyPx').value = 'B2';
+sandbox.saveQty();
+const after12c = vm.runInContext(`stockRows()`, sandbox);
+assert.strictEqual(after12c.length, 1);
+assert.strictEqual(after12c[0].o, 2);
+assert.strictEqual(after12c[0].soLuong, 4, 'Multi-bin 4 + 36 export 36 must leave 4 in O2');
+
+// 12d. Over-stock rejection (41 > 40)
+resetQtyInputs();
+vm.runInContext(`
+  Q = [];
+  K.stock = [{ ke: 'K01', tang: 1, o: 1, maVT: 'W44073', soLuong: 40 }];
+  F = { mode: 'XUAT', step: 'qty', loc: { ke: 'K01', tang: 1, o: 1 }, ma: 'W44073' };
+`, sandbox);
+getMockEl('#qty').value = '41';
+sandbox.saveQty();
+const after12d = vm.runInContext(`stockRows()`, sandbox);
+assert.strictEqual(after12d[0].soLuong, 40, 'Over-stock export must be blocked and leave 40');
+
+// 12e. Backend Code.gs applyOps_ duplicate rows in Stock (4 + 36 = 40 -> export 36 -> 1 row with 4)
+const gasDup = createGasSandbox([
+  ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu', 'po', 'so'],
+  ['RB20617', 'DIRTZILLA DMX', 'KHUON-DZ', "MEN'S", '', 'đôi', '', 'RB20617', '3170061111']
+]);
+gasDup.sheetsData.Stock = [
+  ['ke', 'tang', 'o', 'maVT', 'soLuong', 'capNhat'],
+  ['K01', 1, 1, 'RB20617', 4, ''],
+  ['K01', 1, 1, 'rb20617 ', 36, '']
+];
+const dupRes = vm.runInContext(
+  `applyOps_([{ id: 'tx4036', loai: 'XUAT', ke: 'K01', tang: 1, o: 1, maVT: 'RB20617', soLuong: 36, ghiChu: 'Gò Line 12 · PX A2' }], { ma: 'kho', ten: 'Thủ kho' })`,
+  gasDup.gasSandbox
+);
+assert.strictEqual(dupRes.results[0].ok, true, 'Duplicate rows summing to 40 must succeed exporting 36');
+assert.strictEqual(dupRes.results[0].soLuong, 4, 'Backend applyOps_ must compute 40 - 36 = 4');
+const remainingRbRows = gasDup.sheetsData.Stock.slice(1).filter(r => r[3] === 'RB20617');
+assert.strictEqual(remainingRbRows.length, 1, 'Duplicate Stock rows must be consolidated into 1 clean row');
+assert.strictEqual(remainingRbRows[0][4], 4, 'Consolidated Stock row must hold 4');
+
+// 12f. Backend ZaloKho.gs Chuyền gò formatting
+const parsedGoLine = vm.runInContext(`parseGhiChuZalo_('Gò Line 12 · PX A2 · Thiếu 4 đôi')`, gasDup.gasSandbox);
+assert.strictEqual(parsedGoLine.chuyenLabel, 'Gò Line 12');
+assert.strictEqual(parsedGoLine.px, 'A2');
+assert.strictEqual(parsedGoLine.thieu, 4);
+const parsedGoTT = vm.runInContext(`parseGhiChuZalo_('Gò truyền thống 4 · PX B2')`, gasDup.gasSandbox);
+assert.strictEqual(parsedGoTT.chuyenLabel, 'Gò truyền thống 4');
+assert.strictEqual(parsedGoTT.px, 'B2');
+const msgGoLine = vm.runInContext(
+  `zaloBuildMsg_({ loai: 'XUAT', ke: 'K01', tang: 1, o: 1, ma: 'RB20617', sl: 36, delta: -36, cur: 40, next: 4, tongMa: 4, note: 'Gò Line 12 · PX A2', userMa: 'kho', userTen: 'Thủ kho', time: new Date() }, { ma: 'RB20617', ten: 'DIRTZILLA DMX', po: 'RB20617', so: '3170061111' }, {})`,
+  gasDup.gasSandbox
+);
+assert.ok(msgGoLine.includes('🧵 Chuyền gò: Gò Line 12 · PX A2'), 'Zalo message must say Chuyền gò: Gò Line 12 · PX A2');
+const msgGoTT = vm.runInContext(
+  `zaloBuildMsg_({ loai: 'XUAT', ke: 'K01', tang: 1, o: 2, ma: 'RB20617', sl: 36, delta: -36, cur: 40, next: 4, tongMa: 4, note: 'Gò truyền thống 4 · PX B2', userMa: 'kho', userTen: 'Thủ kho', time: new Date() }, { ma: 'RB20617', ten: 'DIRTZILLA DMX' }, {})`,
+  gasDup.gasSandbox
+);
+assert.ok(msgGoTT.includes('🧵 Chuyền gò: Gò truyền thống 4 · PX B2'), 'Zalo message must say Chuyền gò: Gò truyền thống 4 · PX B2');
+console.log('Test 12 (Xuất kho 40 - 36 = 4, multi-bin & duplicate rows, Zalo Chuyền gò): OK');
+
+// Test 13: Kiểm soát số lượng Kế hoạch (SLKH — Backend Code.gs + Frontend Index.html)
+// 13a. Backend sh_('Items') upgrades 9-column header -> 10 columns, savePlanBatch, logStats, cleanAndNormalizeSheetData
+const gasPlan = createGasSandbox([
+  ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu', 'po', 'so'],
+  ['RB20617', 'DIRTZILLA DMX', 'KHUON-DZ', "MEN'S", '', 'đôi', 'Gò Line 3 · PX A2', 'RB20617', '3170061111']
+]);
+gasPlan.sheetsData.Logs = [
+  ['thoiGian', 'loai', 'ke', 'tang', 'o', 'maVT', 'soLuong', 'nguoi', 'ghiChu', 'clientId'],
+  [new Date(), 'NHAP', 'K01', 1, 1, 'RB20617', 40, 'kho', 'PX A2', 'tx_p1'],
+  [new Date(), 'XUAT', 'K01', 1, 1, 'RB20617', -36, 'kho', 'Gò Line 3 · PX A2', 'tx_p2'],
+  [new Date(), 'XUAT', 'K01', 1, 1, 'RB20617', -4, 'kho', 'Sắp kệ từ K01-T1-O1 sang K05-T2-O3', 'tx_p3'],
+  [new Date(), 'NHAP', 'K05', 2, 3, 'RB20617', 4, 'kho', 'Sắp kệ từ K01-T1-O1 sang K05-T2-O3', 'tx_p4']
+];
+gasPlan.sheetsData.Stock = [
+  ['ke', 'tang', 'o', 'maVT', 'soLuong', 'capNhat'],
+  ['K05', 2, 3, 'RB20617', 4, '']
+];
+vm.runInContext('auth_ = () => ({ ma: "kho", vaiTro: "WORKER" });', gasPlan.gasSandbox);
+gasPlan.gasSandbox.sh_('Items');
+assert.deepStrictEqual(gasPlan.sheetsData.Items[0], ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu', 'po', 'so', 'slkh']);
+
+const planSaveRes = vm.runInContext(
+  'API.savePlanBatch(' + JSON.stringify({
+    items: [
+      { ma: 'RB20617', slkh: 36, po: 'RB20617', so: '3170061111' },
+      { ma: 'RB-PLAN-100', ten: 'MŨ PLAN 100', po: 'RB-PLAN-100', so: 'SO-PLAN-1', slkh: 100 }
+    ]
+  }) + ')',
+  gasPlan.gasSandbox
+);
+assert.strictEqual(planSaveRes.updated, 2);
+const rbRowPlan = gasPlan.sheetsData.Items.find(r => r[0] === 'RB20617');
+assert.strictEqual(rbRowPlan[6], 'Gò Line 3 · PX A2', 'Existing ghiChu must be preserved in plan mode');
+assert.strictEqual(rbRowPlan[9], 36, 'slkh column 10 must be saved as 36');
+const newPlanRow = gasPlan.sheetsData.Items.find(r => r[0] === 'RB-PLAN-100');
+assert.ok(newPlanRow && newPlanRow[9] === 100, 'New planned-only item must be created with slkh = 100');
+
+assert.strictEqual(planSaveRes.kho.logStats.RB20617.nhap, 40, 'logStats must ignore internal relocation NHAP');
+assert.strictEqual(planSaveRes.kho.logStats.RB20617.xuat, 36, 'logStats must ignore internal relocation XUAT');
+assert.strictEqual(planSaveRes.kho.logStats.RB20617.lastChuyen, 'Gò Line 3');
+assert.strictEqual(planSaveRes.kho.logStats.RB20617.lastPx, 'PX A2');
+
+gasPlan.gasSandbox.cleanAndNormalizeSheetData();
+const cleanedRbRow = gasPlan.sheetsData.Items.find(r => r[0] === 'RB20617');
+assert.strictEqual(cleanedRbRow[9], 36, 'cleanAndNormalizeSheetData must preserve slkh');
+
+// 13b. Frontend getPlanControlRows & renderPlan across all 6 statuses
+vm.runInContext(`
+  Q = [];
+  K = {
+    items: [
+      { ma: 'M-DONE', ten: 'Mẫu Đủ KH', po: 'M-DONE', so: 'SO1', slkh: 36, ghiChu: 'Gò Line 3 · PX A2' },
+      { ma: 'M-SHORT', ten: 'Mẫu Thiếu Nhập', po: 'M-SHORT', so: 'SO2', slkh: 100 },
+      { ma: 'M-WAIT', ten: 'Mẫu Chưa Nhập', po: 'M-WAIT', so: 'SO3', slkh: 120 },
+      { ma: 'M-READY', ten: 'Mẫu Chờ Xuất', po: 'M-READY', so: 'SO4', slkh: 80 },
+      { ma: 'M-OVER', ten: 'Mẫu Vượt KH', po: 'M-OVER', so: 'SO5', slkh: 50 },
+      { ma: 'M-NOPLAN', ten: 'Mẫu Chưa Gán KH', po: 'M-NOPLAN', so: 'SO6', slkh: 0 }
+    ],
+    stock: [
+      { ke: 'K01', tang: 1, o: 1, maVT: 'M-DONE', soLuong: 4 },
+      { ke: 'K01', tang: 1, o: 2, maVT: 'M-SHORT', soLuong: 40 },
+      { ke: 'K02', tang: 1, o: 1, maVT: 'M-READY', soLuong: 50 },
+      { ke: 'K02', tang: 1, o: 2, maVT: 'M-OVER', soLuong: 5 },
+      { ke: 'K03', tang: 1, o: 1, maVT: 'M-NOPLAN', soLuong: 25 }
+    ],
+    logStats: {
+      'M-DONE': { nhap: 40, xuat: 36, kiemKeDelta: 0 },
+      'M-SHORT': { nhap: 60, xuat: 20, kiemKeDelta: 0 },
+      'M-READY': { nhap: 80, xuat: 30, kiemKeDelta: 0 },
+      'M-OVER': { nhap: 60, xuat: 55, kiemKeDelta: 0 }
+    },
+    logs: []
+  };
+  kkReconResult = null; kkReconMixed = [];
+  planFilter = 'all';
+`, sandbox);
+
+const pRows = sandbox.getPlanControlRows();
+const byMa = Object.fromEntries(pRows.map(r => [r.ma, r]));
+assert.strictEqual(byMa['M-DONE'].status, 'done');
+assert.strictEqual(byMa['M-DONE'].nhapDiff, 4);
+assert.strictEqual(byMa['M-DONE'].conPhaiXuat, 0);
+assert.strictEqual(byMa['M-DONE'].ton, 4);
+
+assert.strictEqual(byMa['M-SHORT'].status, 'short_in');
+assert.strictEqual(byMa['M-SHORT'].thieuNhap, 40);
+assert.strictEqual(byMa['M-SHORT'].conPhaiXuat, 80);
+
+assert.strictEqual(byMa['M-WAIT'].status, 'not_received');
+assert.strictEqual(byMa['M-WAIT'].thieuNhap, 120);
+
+assert.strictEqual(byMa['M-READY'].status, 'ready_out');
+assert.strictEqual(byMa['M-READY'].thieuNhap, 0);
+assert.strictEqual(byMa['M-READY'].conPhaiXuat, 50);
+
+assert.strictEqual(byMa['M-OVER'].status, 'over');
+assert.strictEqual(byMa['M-OVER'].xuatDiff, 5);
+
+assert.strictEqual(byMa['M-NOPLAN'].status, 'no_plan');
+assert.strictEqual(byMa['M-NOPLAN'].ton, 25);
+
+getMockEl('#planSearch').value = '';
+getMockEl('#planSort').value = 'short_desc';
+sandbox.renderPlan();
+assert.ok(getMockEl('#planSummary').innerHTML.includes('Tổng SL Kế hoạch'), 'Plan summary KPIs must render');
+assert.ok(getMockEl('#planBody').innerHTML.includes('M-DONE') && getMockEl('#planBody').innerHTML.includes('M-SHORT'), 'Plan table body must render rows');
+assert.ok(getMockEl('#planFoot').innerHTML.includes('TỔNG CỘNG (6 mã)'), 'Plan footer must render totals for 6 items');
+
+vm.runInContext(`planFilter = 'short_in'; renderPlan();`, sandbox);
+assert.ok(getMockEl('#planBody').innerHTML.includes('M-SHORT') && !getMockEl('#planBody').innerHTML.includes('M-DONE'), 'short_in filter must only include M-SHORT');
+
+vm.runInContext(`planFilter = 'done'; renderPlan();`, sandbox);
+assert.ok(getMockEl('#planBody').innerHTML.includes('M-DONE') && !getMockEl('#planBody').innerHTML.includes('M-SHORT'), 'done filter must only include M-DONE');
+
+assert.ok(html.includes('id="vPlan"') && html.includes("id:'plan'"), 'HTML must contain vPlan section and plan nav item');
+assert.ok(!/PX\s*[AB]1/.test(html), 'docs/index.html must still not contain PX A1 or PX B1');
+assert.ok(!/Chuyền may/i.test(html), 'docs/index.html must still not contain Chuyền may');
+console.log('Test 13 (Kiểm soát Kế hoạch SLKH — Backend savePlanBatch/logStats & Frontend statuses/table/filters): OK');
+
+// Test 14: Mobile header cleanup, single camera, Tra cứu full cards + 1-tap direct map blink
+assert.ok(!html.includes('id="fabGhCam"'), 'Floating bottom Camera GitHub FAB must be removed');
+assert.ok(!html.includes('id="btnTopGhCam"'), 'Top header duplicate Camera GitHub button must be removed');
+assert.ok(!html.includes('id="findSuggest"'), 'Overlapping #findSuggest dropdown must be removed');
+assert.ok(html.includes("id:'ghCam'"), 'Bottom nav Camera GH shortcut must still exist');
+
+vm.runInContext(`
+  Q = [];
+  K = {
+    items: [
+      { ma: 'RB21533', ten: 'QUESTION MID RECODED', po: 'RB21533', so: '3170061969', mau: "MEN'S", model: '30986', dvt: 'đôi' },
+      { ma: 'W44099', ten: 'PRINCESS (ĐB)', po: 'W44099', so: '3180061969', mau: "WOMEN'S", model: 'KHUON-W99', dvt: 'đôi' }
+    ],
+    stock: [
+      { ke: 'K01', tang: 1, o: 1, maVT: 'RB21533', soLuong: 640 },
+      { ke: 'K02', tang: 2, o: 3, maVT: 'W44099', soLuong: 700 }
+    ],
+    logs: []
+  };
+  kkReconResult = null; kkReconMixed = [];
+`, sandbox);
+
+getMockEl('#findInp').value = '61969';
+sandbox.renderFind();
+assert.strictEqual(getMockEl('#findChips').hidden, true, '#findChips must hide while typing query');
+const resHtml = getMockEl('#findRes').innerHTML;
+const resPlain = resHtml.replace(/<[^>]+>/g, '').replace(/&#39;/g, "'");
+assert.ok(resHtml.includes('K01-T1-O1') && resHtml.includes('K02-T2-O3'), 'Both rack/cell locations must show cleanly');
+assert.ok(resPlain.includes('RB21533') && resPlain.includes('W44099'), 'Both matching items with same 5 last SO digits must show');
+assert.ok(resPlain.includes('3170061969') && resPlain.includes('3180061969'), 'Both full SOs must display clearly');
+assert.ok(resPlain.includes('Hệ:') && resPlain.includes("WOMEN'S") && resPlain.includes("MEN'S"), 'He labels must appear cleanly');
+assert.ok(resPlain.includes('30986') && resPlain.includes('KHUON-W99'), 'Khuon labels must appear cleanly');
+assert.ok(resHtml.includes('640') && resHtml.includes('700'), 'Quantities must appear cleanly');
+assert.ok(resHtml.includes('data-loc="0"') && resHtml.includes('data-loc="1"'), 'Direct 1-tap Tới kệ buttons must render');
+
+sandbox.renderMap([{ ke: 'K02', tang: 2, o: 3, ma: 'W44099', qty: 700 }]);
+assert.strictEqual(vm.runInContext('mapSel', sandbox), 'K02');
+assert.deepStrictEqual(JSON.parse(JSON.stringify(vm.runInContext('mapSelCell', sandbox))), { ke: 'K02', tang: 2, o: 3 });
+assert.ok(getMockEl('#mapHintBanner').innerHTML.includes('W44099') && getMockEl('#mapHintBanner').innerHTML.includes('700') && getMockEl('#mapHintBanner').innerHTML.includes('K02-T2-O3'), 'mapHintBanner must display targeted item & bin');
+assert.ok(getMockEl('#mapRacks').innerHTML.includes('blink'), 'Target cell must blink in #mapRacks');
+
+// Single object arg must also work cleanly
+sandbox.renderMap({ ke: 'K01', tang: 1, o: 1 });
+assert.strictEqual(vm.runInContext('mapSel', sandbox), 'K01');
+assert.ok(getMockEl('#mapRacks').innerHTML.includes('blink'), 'Single-object renderMap arg must blink cell');
+console.log('Test 14 (Mobile header cleanup, single camera, Tra cứu full cards + direct map blink): OK');
 
 console.log('\nALL TESTS PASSED SUCCESSFULLY! 🚀');

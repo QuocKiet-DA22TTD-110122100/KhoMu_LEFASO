@@ -177,11 +177,19 @@ function n_(v) { return Number(v || 0).toLocaleString('vi-VN'); }
 /* ---------- Tách chuyền / PX / thiếu từ ghi chú ---------- */
 function parseGhiChuZalo_(note) {
   const s = String(note || '');
-  const ch = s.match(/Chuy[eêề]n\s*(\d+)/i);
+  const goLine = s.match(/G[oò]\s*Line\s*(\d+)/i);
+  const goTT = s.match(/G[oò]\s*(?:truy[eêề]n\s*th[oôố]ng|TT)\s*(\d+)/i);
+  const chLegacy = s.match(/Chuy[eêề]n(?:\s*g[oò])?\s*(\d+)/i);
+  let chuyen = '';
+  let chuyenLabel = '';
+  if (goLine) { chuyen = goLine[1]; chuyenLabel = 'Gò Line ' + goLine[1]; }
+  else if (goTT) { chuyen = goTT[1]; chuyenLabel = 'Gò truyền thống ' + goTT[1]; }
+  else if (chLegacy) { chuyen = chLegacy[1]; chuyenLabel = 'Chuyền ' + chLegacy[1]; }
   const px = s.match(/PX\s*([A-Z]\d)/i);
   const th = s.match(/thi[eếê]u\s*(\d+)/i);
   return {
-    chuyen: ch ? ch[1] : '',
+    chuyen: chuyen,
+    chuyenLabel: chuyenLabel,
     px: px ? px[1].toUpperCase() : '',
     thieu: th ? Number(th[1]) : 0,
     coThieu: /thi[eếê]u|còn nợ|con no|chờ bù|cho bu/i.test(s)
@@ -253,9 +261,9 @@ function zaloBuildMsg_(ev, it, users) {
 
   if (ev.loai !== 'XUAT_THIEU') L.push('📦 Tồn ô sau thao tác: ' + n_(ev.next) + ' đôi · Tổng tồn mã: ' + n_(ev.tongMa) + ' đôi');
 
-  if (info.chuyen || info.px) L.push('🧵 Chuyền may: ' + (info.chuyen ? 'Chuyền ' + info.chuyen : '—') + (info.px ? ' · PX ' + info.px : ''));
+  if (info.chuyenLabel || info.px) L.push('🧵 Chuyền gò: ' + (info.chuyenLabel || '—') + (info.px ? ' · PX ' + info.px : ''));
   if (info.coThieu || ev.loai === 'XUAT_THIEU') {
-    L.push('⚠️ THIẾU HÀNG' + (info.chuyen ? ' — Chuyền ' + info.chuyen : '') + (info.px ? ' (PX ' + info.px + ')' : '') +
+    L.push('⚠️ THIẾU HÀNG' + (info.chuyenLabel ? ' — ' + info.chuyenLabel : '') + (info.px ? ' (PX ' + info.px + ')' : '') +
       (info.thieu ? ': còn thiếu ' + n_(info.thieu) + ' đôi' : ': cần bù thêm'));
   }
   if (ev.note) L.push('💬 Ghi chú: ' + ev.note);
@@ -280,7 +288,7 @@ function baoCaoThieuZalo() {
       ? (users[maLower] + ' (' + maLower + ')')
       : rawNguoi;
     const vai = String(r[1] || '').trim().toUpperCase() === 'NHAP' ? 'Người nhập: ' : 'Người cấp phát: ';
-    const key = (info.chuyen ? 'Chuyền ' + info.chuyen : 'Chưa rõ chuyền') + (info.px ? ' · PX ' + info.px : '');
+    const key = (info.chuyenLabel || 'Chưa rõ chuyền gò') + (info.px ? ' · PX ' + info.px : '');
     (byLine[key] = byLine[key] || []).push(
       code_(r[5]) + ' (' + r[2] + '-T' + r[3] + '-O' + r[4] + ')' +
       (info.thieu ? ' thiếu ' + n_(info.thieu) : '') +

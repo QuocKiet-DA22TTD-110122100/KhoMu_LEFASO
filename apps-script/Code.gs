@@ -20,7 +20,7 @@ const KHO = {
 
 const SHEETS = {
   Shelves: ['ma', 'khu', 'soTang', 'soO', 'ghiChu'],
-  Items:   ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu', 'po', 'so'],
+  Items:   ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu', 'po', 'so', 'slkh'],
   Stock:   ['ke', 'tang', 'o', 'maVT', 'soLuong', 'capNhat'],
   Logs:    ['thoiGian', 'loai', 'ke', 'tang', 'o', 'maVT', 'soLuong', 'nguoi', 'ghiChu', 'clientId'],
   Users:   ['ma', 'ten', 'vaiTro', 'salt', 'hash', 'hoatDong']
@@ -134,6 +134,7 @@ function cleanAndNormalizeSheetData() {
     let poVal = mergeCsvCodes_(r[7], extracted.po);
     if (!poVal && /^(?:RB|PO|W)\d{3,}/i.test(ma)) poVal = ma;
     const soVal = mergeCsvCodes_(r[8], extracted.so);
+    const slkhVal = Math.max(0, Math.round(Number(r[9]) || 0));
     if (!itemMap[ma]) {
       itemMap[ma] = [
         ma,
@@ -144,12 +145,15 @@ function cleanAndNormalizeSheetData() {
         String(r[5] || 'đôi').trim() || 'đôi',
         rawGhiChu,
         poVal,
-        soVal
+        soVal,
+        slkhVal > 0 ? slkhVal : ''
       ];
       itemOrder.push(ma);
     } else {
       itemMap[ma][7] = mergeCsvCodes_(itemMap[ma][7], poVal);
       itemMap[ma][8] = mergeCsvCodes_(itemMap[ma][8], soVal);
+      const maxSlkh = Math.max(Number(itemMap[ma][9]) || 0, slkhVal);
+      itemMap[ma][9] = maxSlkh > 0 ? maxSlkh : '';
       dupItemsRemoved++;
     }
   }
@@ -182,7 +186,7 @@ function cleanAndNormalizeSheetData() {
       mergedStockRows++;
     }
     if (!itemMap[ma]) {
-      itemMap[ma] = [ma, ma, '', '', '', 'đôi', 'Tự động đồng bộ từ tồn kho', '', ''];
+      itemMap[ma] = [ma, ma, '', '', '', 'đôi', 'Tự động đồng bộ từ tồn kho', '', '', ''];
       itemOrder.push(ma);
       autoAddedItems++;
     }
@@ -546,6 +550,7 @@ const API = {
     if (it.ghiChu !== undefined) itemPayload.ghiChu = String(it.ghiChu || '').trim();
     if (it.po !== undefined) itemPayload.po = mergeCsvCodes_(code_(it.po), '');
     if (it.so !== undefined) itemPayload.so = mergeCsvCodes_(code_(it.so), '');
+    if (it.slkh !== undefined) itemPayload.slkh = Math.max(0, Math.round(Number(it.slkh) || 0));
     upsertItemsBatch_([itemPayload], true);
     return { kho: getData_() };
   },
@@ -557,7 +562,7 @@ const API = {
     list.forEach(function (it) {
       const ma = code_(it && it.ma).replace(/^(VT|MU):\s*/, '');
       if (!ma) return;
-      normalized.push({
+      const entry = {
         ma: ma,
         ten: String(it.ten || '').trim(),
         model: String(it.model || it.khuon || '').trim(),
@@ -567,10 +572,40 @@ const API = {
         po: mergeCsvCodes_(code_(it.po), ''),
         so: mergeCsvCodes_(code_(it.so), ''),
         onlyUpdateExisting: !!it.onlyUpdateExisting
-      });
+      };
+      if (it.slkh !== undefined) entry.slkh = Math.max(0, Math.round(Number(it.slkh) || 0));
+      normalized.push(entry);
     });
     if (normalized.length) {
       upsertItemsBatch_(normalized, 'sync');
+    }
+    return req.skipReload ? { updated: normalized.length } : { updated: normalized.length, kho: getData_() };
+  },
+
+  savePlanBatch: function (req) {
+    auth_(req);
+    const list = Array.isArray(req.items) ? req.items : [];
+    const normalized = [];
+    list.forEach(function (it) {
+      const ma = code_(it && it.ma).replace(/^(VT|MU):\s*/, '');
+      if (!ma) return;
+      const entry = {
+        ma: ma,
+        ten: String(it.ten || '').trim(),
+        model: String(it.model || it.khuon || '').trim(),
+        mau: String(it.mau || it.he || '').trim(),
+        size: String(it.size || '').trim(),
+        dvt: String(it.dvt || 'đôi').trim() || 'đôi',
+        ghiChu: it.ghiChu !== undefined ? String(it.ghiChu || '').trim() : undefined,
+        overwriteNote: !!(it && it.overwriteNote),
+        po: mergeCsvCodes_(code_(it.po), ''),
+        so: mergeCsvCodes_(code_(it.so), '')
+      };
+      if (it.slkh !== undefined) entry.slkh = Math.max(0, Math.round(Number(it.slkh) || 0));
+      normalized.push(entry);
+    });
+    if (normalized.length) {
+      upsertItemsBatch_(normalized, 'plan');
     }
     return req.skipReload ? { updated: normalized.length } : { updated: normalized.length, kho: getData_() };
   },
@@ -686,15 +721,43 @@ function getData_() {
   const logs = sh_('Logs').getDataRange().getValues();
   const head = logs.shift() || SHEETS.Logs;
   const logPoSoMap = {};
+  const logStats = {};
   for (let i = 0; i < logs.length; i++) {
     const r = logs[i];
     const ma = code_(r[5]).replace(/^(VT|MU):\s*/, '');
     if (!ma) continue;
-    const ext = extractPoSoFromNote_(r[8]);
+    const noteStr = String(r[8] || '');
+    const ext = extractPoSoFromNote_(noteStr);
     if (ext.po || ext.so) {
       if (!logPoSoMap[ma]) logPoSoMap[ma] = { po: '', so: '' };
       if (ext.po) logPoSoMap[ma].po = mergeCsvCodes_(logPoSoMap[ma].po, ext.po);
       if (ext.so) logPoSoMap[ma].so = mergeCsvCodes_(logPoSoMap[ma].so, ext.so);
+    }
+    const loai = code_(r[1]);
+    const rawQty = Number(r[6]) || 0;
+    const isReloc = /Sắp kệ từ|Chuyển vị trí/i.test(noteStr);
+    if (!logStats[ma]) {
+      logStats[ma] = { nhap: 0, xuat: 0, kiemKeDelta: 0, lastIn: '', lastOut: '', lastChuyen: '', lastPx: '' };
+    }
+    const st = logStats[ma];
+    if (!isReloc) {
+      if (loai === 'NHAP' && rawQty !== 0) {
+        st.nhap += Math.abs(rawQty);
+        st.lastIn = fmt_(r[0]);
+      } else if (loai === 'XUAT' && rawQty !== 0) {
+        st.xuat += Math.abs(rawQty);
+        st.lastOut = fmt_(r[0]);
+        const goLine = noteStr.match(/G[oò]\s*Line\s*(\d+)/i);
+        const goTT = noteStr.match(/G[oò]\s*(?:truy[eêề]n\s*th[oôố]ng|TT)\s*(\d+)/i);
+        const chLeg = noteStr.match(/Chuy[eêề]n(?:\s*g[oò])?\s*(\d+)/i);
+        if (goLine) st.lastChuyen = 'Gò Line ' + goLine[1];
+        else if (goTT) st.lastChuyen = 'Gò truyền thống ' + goTT[1];
+        else if (chLeg) st.lastChuyen = 'Chuyền ' + chLeg[1];
+        const pxM = noteStr.match(/PX\s*([A-Z]\d)/i);
+        if (pxM) st.lastPx = 'PX ' + pxM[1].toUpperCase();
+      } else if (loai === 'KIEMKE' || loai === 'KIEM_KE') {
+        st.kiemKeDelta += rawQty;
+      }
     }
   }
   const recent = logs.slice(-100).reverse().map(function (r) {
@@ -714,6 +777,7 @@ function getData_() {
     if (!so && fromLogs.so) so = fromLogs.so;
     it.po = po;
     it.so = so;
+    it.slkh = Math.max(0, Math.round(Number(it.slkh) || 0));
     return it;
   });
   let slotNotes = {};
@@ -723,7 +787,16 @@ function getData_() {
     shelves: rows_('Shelves'),
     items: items,
     stock: rows_('Stock').filter(function (s) { return Number(s.soLuong) > 0; })
-      .map(function (s) { return { ke: s.ke, tang: Number(s.tang), o: Number(s.o), maVT: String(s.maVT), soLuong: Number(s.soLuong) }; }),
+      .map(function (s) {
+        return {
+          ke: code_(s.ke),
+          tang: Number(s.tang),
+          o: Number(s.o),
+          maVT: code_(s.maVT).replace(/^(VT|MU):\s*/, ''),
+          soLuong: Number(s.soLuong)
+        };
+      }),
+    logStats: logStats,
     slotNotes: slotNotes,
     logs: recent,
     serverTime: fmt_(new Date())
@@ -801,10 +874,16 @@ function applyOps_(ops, user) {
       if (!ma) throw new Error('Thiếu mã mũ');
 
       let idx = -1;
+      let cur = 0;
+      const dupIdxs = [];
       for (let i = 1; i < stock.length; i++) {
-        if (code_(stock[i][0]) === ke && Number(stock[i][1]) === tang && Number(stock[i][2]) === o && code_(stock[i][3]) === ma) { idx = i; break; }
+        const rowMa = code_(stock[i][3]).replace(/^(VT|MU):\s*/, '');
+        if (code_(stock[i][0]) === ke && Number(stock[i][1]) === tang && Number(stock[i][2]) === o && rowMa === ma) {
+          cur += Number(stock[i][4]) || 0;
+          if (idx < 0) idx = i;
+          else dupIdxs.push(i);
+        }
       }
-      const cur = idx > 0 ? Number(stock[idx][4]) || 0 : 0;
       let next = cur, delta = 0, note = op.ghiChu || '';
 
       const notePoSo = extractPoSoFromNote_(op.ghiChu);
@@ -881,8 +960,15 @@ function applyOps_(ops, user) {
         throw new Error('Loại thao tác không hợp lệ: ' + loai);
       }
 
-      if (idx > 0) { stock[idx][4] = next; stock[idx][5] = now; stockChanged = true; }
-      else if (next > 0) { stock.push([ke, tang, o, ma, next, now]); stockChanged = true; }
+      if (idx > 0) {
+        stock[idx][0] = ke; stock[idx][1] = tang; stock[idx][2] = o; stock[idx][3] = ma;
+        stock[idx][4] = next; stock[idx][5] = now;
+        dupIdxs.forEach(function (di) { stock[di][4] = 0; });
+        stockChanged = true;
+      } else if (next > 0) {
+        stock.push([ke, tang, o, ma, next, now]);
+        stockChanged = true;
+      }
 
       newLogs.push([now, loai, ke, tang, o, ma, delta, logNguoi, note, txId]);
       let tongMa = 0;
@@ -936,6 +1022,10 @@ function upsertItemsBatch_(itemsList, mode) {
   if (!itemsList || !itemsList.length) return;
   const s = sh_('Items');
   const cols = SHEETS.Items.length;
+  const toSlkhCell = function (v) {
+    const n = Math.max(0, Math.round(Number(v) || 0));
+    return n > 0 ? n : '';
+  };
   const data = s.getDataRange().getValues();
   const mapIdx = {};
   for (let i = 1; i < data.length; i++) {
@@ -955,7 +1045,7 @@ function upsertItemsBatch_(itemsList, mode) {
         SHEETS.Items.forEach(function (k, idx) {
           if (idx === 0) { existing[0] = ma; return; }
           if (it[k] !== undefined) {
-            const val = (k === 'po' || k === 'so') ? mergeCsvCodes_(it[k], '') : it[k];
+            const val = (k === 'po' || k === 'so') ? mergeCsvCodes_(it[k], '') : (k === 'slkh' ? toSlkhCell(it.slkh) : it[k]);
             if (existing[idx] !== val) { existing[idx] = val; changed = true; }
           }
         });
@@ -972,6 +1062,10 @@ function upsertItemsBatch_(itemsList, mode) {
         if (mergedPo !== String(existing[7] || '').trim()) { existing[7] = mergedPo; changed = true; }
         const mergedSo = mergeCsvCodes_(existing[8], it.so);
         if (mergedSo !== String(existing[8] || '').trim()) { existing[8] = mergedSo; changed = true; }
+        if (it.slkh !== undefined && Number(it.slkh) > 0) {
+          const slkhCell = toSlkhCell(it.slkh);
+          if (existing[9] !== slkhCell) { existing[9] = slkhCell; changed = true; }
+        }
       } else if (mode === 'sync') {
         const newTen = String(it.ten || '').trim();
         if (newTen && code_(newTen) !== ma && String(existing[1] || '').trim() !== newTen) {
@@ -988,6 +1082,36 @@ function upsertItemsBatch_(itemsList, mode) {
         if (mergedPo !== String(existing[7] || '').trim()) { existing[7] = mergedPo; changed = true; }
         const mergedSo = mergeCsvCodes_(existing[8], it.so);
         if (mergedSo !== String(existing[8] || '').trim()) { existing[8] = mergedSo; changed = true; }
+        if (it.slkh !== undefined && Number(it.slkh) > 0) {
+          const slkhCell = toSlkhCell(it.slkh);
+          if (existing[9] !== slkhCell) { existing[9] = slkhCell; changed = true; }
+        }
+      } else if (mode === 'plan') {
+        if (it.slkh !== undefined) {
+          const slkhCell = toSlkhCell(it.slkh);
+          if (existing[9] !== slkhCell) { existing[9] = slkhCell; changed = true; }
+        }
+        const newTen = String(it.ten || '').trim();
+        if (newTen && code_(newTen) !== ma && (!String(existing[1] || '').trim() || code_(existing[1]) === ma)) {
+          existing[1] = newTen; changed = true;
+        }
+        const newModel = String(it.model || it.khuon || '').trim();
+        if (newModel && !String(existing[2] || '').trim()) { existing[2] = newModel; changed = true; }
+        const newMau = String(it.mau || it.he || '').trim();
+        if (newMau && !String(existing[3] || '').trim()) { existing[3] = newMau; changed = true; }
+        const newSize = String(it.size || '').trim();
+        if (newSize && !String(existing[4] || '').trim()) { existing[4] = newSize; changed = true; }
+        if (!String(existing[5] || '').trim()) { existing[5] = String(it.dvt || 'đôi').trim() || 'đôi'; changed = true; }
+        if (it.overwriteNote && it.ghiChu !== undefined) {
+          const nextNote = String(it.ghiChu || '').trim();
+          if (String(existing[6] || '').trim() !== nextNote) { existing[6] = nextNote; changed = true; }
+        } else if (it.ghiChu && !String(existing[6] || '').trim()) {
+          existing[6] = String(it.ghiChu).trim(); changed = true;
+        }
+        const mergedPo = mergeCsvCodes_(existing[7], it.po);
+        if (mergedPo !== String(existing[7] || '').trim()) { existing[7] = mergedPo; changed = true; }
+        const mergedSo = mergeCsvCodes_(existing[8], it.so);
+        if (mergedSo !== String(existing[8] || '').trim()) { existing[8] = mergedSo; changed = true; }
       }
     } else if (!(mode === 'sync' && it.onlyUpdateExisting)) {
       const row = SHEETS.Items.map(function (k) {
@@ -997,6 +1121,7 @@ function upsertItemsBatch_(itemsList, mode) {
         if (k === 'mau') return String(it.mau || it.he || '').trim();
         if (k === 'dvt') return String(it.dvt || 'đôi').trim() || 'đôi';
         if (k === 'po' || k === 'so') return mergeCsvCodes_(it[k], '');
+        if (k === 'slkh') return toSlkhCell(it.slkh);
         return it[k] === undefined ? '' : it[k];
       });
       mapIdx[ma] = data.length;
