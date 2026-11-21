@@ -374,8 +374,7 @@ function taoNguoiDung(ma, ten, matKhau, vaiTro) {
   ma = String(ma || '').trim().toLowerCase();
   ten = String(ten || '').trim();
   if (!ma || !matKhau) throw new Error('Thiếu mã hoặc mật khẩu');
-  const rawRole = String(vaiTro || 'THUKHO').trim().toUpperCase();
-  const role = (rawRole === 'ADMIN') ? 'ADMIN' : (rawRole === 'WORKER' ? 'WORKER' : 'THUKHO');
+  const role = normalizeRole_(vaiTro || 'WORKER');
   const salt = Utilities.getUuid();
   const s = sh_('Users');
   const data = s.getDataRange().getValues();
@@ -498,7 +497,7 @@ const API = {
     if (!u || u.hoatDong === false || String(u.hoatDong).toUpperCase() === 'FALSE') throw new Error('Sai tài khoản hoặc mật khẩu');
     if (hash_(String(req.mk || ''), u.salt) !== u.hash) throw new Error('Sai tài khoản hoặc mật khẩu');
     const userMa = String(u.ma || '').trim().toLowerCase();
-    const user = { ma: userMa, ten: String(u.ten || userMa).trim(), vaiTro: String(u.vaiTro || 'THUKHO').trim().toUpperCase() };
+    const user = { ma: userMa, ten: String(u.ten || userMa).trim(), vaiTro: normalizeRole_(u.vaiTro || 'WORKER') };
     const token = Utilities.getUuid();
     putSession_(token, user);
     return { token: token, user: user, kho: getData_(user) };
@@ -519,7 +518,7 @@ const API = {
   BATCH_SYNC: function (req) {
     const user = req.token
       ? auth_(req)
-      : { ma: String(req.user || 'kho').trim().toLowerCase(), ten: String(req.userTen || req.user || 'Kho').trim(), vaiTro: 'THUKHO' };
+      : { ma: String(req.user || 'kho').trim().toLowerCase(), ten: String(req.userTen || req.user || 'Kho').trim(), vaiTro: 'WORKER' };
     const ops = Array.isArray(req.ops) ? req.ops : (Array.isArray(req.queue) ? req.queue : []);
     return applyOps_(ops, user);
   },
@@ -540,6 +539,7 @@ const API = {
 
   saveItem: function (req) {
     const user = auth_(req);
+    if (!canControl_(user)) throw new Error('Tài khoản Công nhân không có quyền thêm/sửa danh mục mã mũ');
     const it = req.item || {};
     const ma = code_(it.ma);
     if (!ma) throw new Error('Thiếu mã mũ');
@@ -559,6 +559,7 @@ const API = {
 
   syncItemsMeta: function (req) {
     const user = auth_(req);
+    if (!canControl_(user)) throw new Error('Tài khoản Công nhân không có quyền chuẩn hoá danh mục từ kiểm kê');
     const list = Array.isArray(req.items) ? req.items : [];
     const normalized = [];
     list.forEach(function (it) {
@@ -586,6 +587,7 @@ const API = {
 
   savePlanBatch: function (req) {
     const user = auth_(req);
+    if (!canControl_(user)) throw new Error('Tài khoản Công nhân không có quyền Kiểm soát Kế hoạch (SLKH)');
     const list = Array.isArray(req.items) ? req.items : [];
     const normalized = [];
     list.forEach(function (it) {
@@ -712,7 +714,9 @@ function processWarehouseAction(payload) {
     soLuong: Number(payload.qty !== undefined ? payload.qty : payload.soLuong),
     ghiChu: String(payload.ghiChu || '')
   };
-  const user = { ma: String(payload.user || 'kho').trim().toLowerCase(), ten: String(payload.userTen || '').trim() };
+  const user = payload.token
+    ? auth_(payload)
+    : { ma: String(payload.user || 'kho').trim().toLowerCase(), ten: String(payload.userTen || '').trim() };
   const res = applyOps_([op], user);
   const first = (res.results && res.results[0]) || {};
   if (!first.ok) throw new Error(first.error || 'Lỗi ghi dữ liệu kho');
@@ -721,6 +725,7 @@ function processWarehouseAction(payload) {
 
 function getData_(user) {
   const canSeeLogs = !user || isAdmin_(user);
+  const canSeeControl = !user || canControl_(user);
   const logs = sh_('Logs').getDataRange().getValues();
   const head = logs.shift() || SHEETS.Logs;
   const logPoSoMap = {};
@@ -799,7 +804,7 @@ function getData_(user) {
           soLuong: Number(s.soLuong)
         };
       }),
-    logStats: logStats,
+    logStats: canSeeControl ? logStats : {},
     slotNotes: slotNotes,
     logs: canSeeLogs ? recent : [],
     serverTime: fmt_(new Date())
@@ -932,6 +937,7 @@ function applyOps_(ops, user) {
         }
         next = cur - sl; delta = -sl;
       } else if (loai === 'KIEMKE') {
+        if (isWorker_(user)) throw new Error('Tài khoản Công nhân không có quyền Kiểm kê & Đối chiếu');
         if (sl < 0) throw new Error('Số đếm không hợp lệ');
         next = sl; delta = sl - cur;
         note = 'Hệ thống: ' + cur + ' → Thực tế: ' + sl + (note ? ' · ' + note : '');
@@ -1196,8 +1202,26 @@ function cleanupSessions_(props) {
   } catch (e) {}
 }
 
+function normalizeRole_(vaiTro) {
+  const r = String(vaiTro || '').trim().toUpperCase();
+  if (r === 'ADMIN' || r === 'QUANTRI' || r === 'QUẢN TRỊ') return 'ADMIN';
+  if (r === 'THUKHO' || r === 'THU_KHO' || r === 'THỦ KHO' || r === 'KEEPER') return 'THUKHO';
+  if (r === 'WORKER' || r === 'CONGNHAN' || r === 'CONG_NHAN' || r === 'CÔNG NHÂN' || r === 'CN') return 'WORKER';
+  return 'WORKER';
+}
+
 function isAdmin_(user) {
-  return String((user && user.vaiTro) || '').trim().toUpperCase() === 'ADMIN';
+  return !!(user && normalizeRole_(user.vaiTro) === 'ADMIN');
+}
+
+function isWorker_(user) {
+  return !!(user && user.vaiTro !== undefined && user.vaiTro !== '' && normalizeRole_(user.vaiTro) === 'WORKER');
+}
+
+function canControl_(user) {
+  if (!user) return false;
+  const r = normalizeRole_(user.vaiTro);
+  return r === 'ADMIN' || r === 'THUKHO';
 }
 
 function auth_(req) {

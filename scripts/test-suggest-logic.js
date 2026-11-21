@@ -528,7 +528,7 @@ const resetQtyInputs = () => {
 resetQtyInputs();
 vm.runInContext(`
   API = '';
-  SESS = { token: 't', user: { ma: 'kho', ten: 'Thủ kho' } };
+  SESS = { token: 't', user: { ma: 'kho', ten: 'Thủ kho', vaiTro: 'THUKHO' } };
   Q = [];
   ERRS = [];
   K.stock = [{ ke: 'K01', tang: 1, o: 1, maVT: 'RB20617', soLuong: 40 }];
@@ -649,7 +649,7 @@ gasPlan.sheetsData.Stock = [
   ['ke', 'tang', 'o', 'maVT', 'soLuong', 'capNhat'],
   ['K05', 2, 3, 'RB20617', 4, '']
 ];
-vm.runInContext('auth_ = () => ({ ma: "kho", vaiTro: "WORKER" });', gasPlan.gasSandbox);
+vm.runInContext('auth_ = () => ({ ma: "kho", vaiTro: "THUKHO" });', gasPlan.gasSandbox);
 gasPlan.gasSandbox.sh_('Items');
 assert.deepStrictEqual(gasPlan.sheetsData.Items[0], ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu', 'po', 'so', 'slkh']);
 
@@ -680,6 +680,7 @@ assert.strictEqual(cleanedRbRow[9], 36, 'cleanAndNormalizeSheetData must preserv
 
 // 13b. Frontend getPlanControlRows & renderPlan across all 6 statuses
 vm.runInContext(`
+  SESS = { token: 't', user: { ma: 'tk01', ten: 'Thủ kho', vaiTro: 'THUKHO' } };
   Q = [];
   K = {
     items: [
@@ -798,19 +799,48 @@ assert.strictEqual(vm.runInContext('mapSel', sandbox), 'K01');
 assert.ok(getMockEl('#mapRacks').innerHTML.includes('blink'), 'Single-object renderMap arg must blink cell');
 console.log('Test 14 (Mobile header cleanup, single camera, Tra cứu full cards + direct map blink): OK');
 
-// Test 15: Phân quyền Thủ kho (THUKHO/WORKER) vs Quản trị (ADMIN) — Backend Code.gs + Frontend Index.html
+// Test 15: Phân quyền 3 vai trò Công nhân (WORKER) vs Thủ kho (THUKHO) vs Quản trị (ADMIN)
 // 15a. Backend RBAC in Code.gs
 const gasRbac = createGasSandbox([
   ['ma', 'ten', 'model', 'mau', 'size', 'dvt', 'ghiChu', 'po', 'so', 'slkh'],
   ['RB20617', 'DIRTZILLA DMX', 'KHUON-DZ', "MEN'S", '', 'đôi', '', 'RB20617', '3170061111', 36]
 ]);
+gasRbac.sheetsData.Stock = [
+  ['ke', 'tang', 'o', 'maVT', 'soLuong', 'capNhat'],
+  ['K01', 1, 1, 'RB20617', 40, '']
+];
 gasRbac.sheetsData.Logs = [
   ['thoiGian', 'loai', 'ke', 'tang', 'o', 'maVT', 'soLuong', 'nguoi', 'ghiChu', 'clientId'],
   [new Date(), 'NHAP', 'K01', 1, 1, 'RB20617', 40, 'tk01', 'PX A2', 'tx_r1']
 ];
+assert.strictEqual(vm.runInContext(`normalizeRole_('ADMIN')`, gasRbac.gasSandbox), 'ADMIN');
+assert.strictEqual(vm.runInContext(`normalizeRole_('THUKHO')`, gasRbac.gasSandbox), 'THUKHO');
+assert.strictEqual(vm.runInContext(`normalizeRole_('WORKER')`, gasRbac.gasSandbox), 'WORKER');
+assert.strictEqual(vm.runInContext(`normalizeRole_('CONGNHAN')`, gasRbac.gasSandbox), 'WORKER');
+assert.strictEqual(vm.runInContext(`normalizeRole_('')`, gasRbac.gasSandbox), 'WORKER');
+
 assert.strictEqual(vm.runInContext(`isAdmin_({ vaiTro: 'ADMIN' })`, gasRbac.gasSandbox), true);
 assert.strictEqual(vm.runInContext(`isAdmin_({ vaiTro: 'THUKHO' })`, gasRbac.gasSandbox), false);
 assert.strictEqual(vm.runInContext(`isAdmin_({ vaiTro: 'WORKER' })`, gasRbac.gasSandbox), false);
+
+assert.strictEqual(vm.runInContext(`isWorker_({ vaiTro: 'WORKER' })`, gasRbac.gasSandbox), true);
+assert.strictEqual(vm.runInContext(`isWorker_({ vaiTro: 'THUKHO' })`, gasRbac.gasSandbox), false);
+assert.strictEqual(vm.runInContext(`isWorker_({ vaiTro: 'ADMIN' })`, gasRbac.gasSandbox), false);
+
+assert.strictEqual(vm.runInContext(`canControl_({ vaiTro: 'ADMIN' })`, gasRbac.gasSandbox), true);
+assert.strictEqual(vm.runInContext(`canControl_({ vaiTro: 'THUKHO' })`, gasRbac.gasSandbox), true);
+assert.strictEqual(vm.runInContext(`canControl_({ vaiTro: 'WORKER' })`, gasRbac.gasSandbox), false);
+
+gasRbac.gasSandbox.taoNguoiDung('cn01', 'Công nhân 1', '123', 'WORKER');
+gasRbac.gasSandbox.taoNguoiDung('tk01', 'Thủ kho 1', '123', 'THUKHO');
+assert.strictEqual(gasRbac.sheetsData.Users.find(u => u[0] === 'cn01')[2], 'WORKER');
+assert.strictEqual(gasRbac.sheetsData.Users.find(u => u[0] === 'tk01')[2], 'THUKHO');
+
+const dataWorker = vm.runInContext(`getData_({ ma: 'cn01', vaiTro: 'WORKER' })`, gasRbac.gasSandbox);
+assert.strictEqual(dataWorker.logs.length, 0, 'WORKER must not receive raw system logs');
+assert.deepStrictEqual(JSON.parse(JSON.stringify(dataWorker.logStats)), {}, 'WORKER must not receive control logStats');
+assert.strictEqual(dataWorker.stock.length, 1, 'WORKER must still receive stock');
+assert.strictEqual(dataWorker.items.length, 1, 'WORKER must still receive items');
 
 const dataThuKho = vm.runInContext(`getData_({ ma: 'tk01', vaiTro: 'THUKHO' })`, gasRbac.gasSandbox);
 assert.strictEqual(dataThuKho.logs.length, 0, 'THUKHO must not receive raw system logs');
@@ -818,31 +848,127 @@ assert.strictEqual(dataThuKho.logStats.RB20617.nhap, 40, 'THUKHO must still rece
 
 const dataAdmin = vm.runInContext(`getData_({ ma: 'admin', vaiTro: 'ADMIN' })`, gasRbac.gasSandbox);
 assert.strictEqual(dataAdmin.logs.length, 1, 'ADMIN must receive system logs');
+assert.strictEqual(dataAdmin.logStats.RB20617.nhap, 40, 'ADMIN must receive logStats');
 
+// WORKER API guards
+vm.runInContext(`auth_ = () => ({ ma: 'cn01', ten: 'Công nhân 1', vaiTro: 'WORKER' });`, gasRbac.gasSandbox);
+['savePlanBatch', 'syncItemsMeta', 'saveItem', 'deleteItem', 'cleanData', 'archiveLogs', 'seedSample', 'clearSample', 'addUser', 'listUsers'].forEach(fn => {
+  assert.throws(
+    () => vm.runInContext(`API.${fn}({ ma: 'RB20617', mk: '123', item: { ma: 'RB20617' }, items: [{ ma: 'RB20617', slkh: 10 }] })`, gasRbac.gasSandbox),
+    /Công nhân|quản trị|Không có quyền/i,
+    `API.${fn} must reject WORKER`
+  );
+});
+
+// WORKER applyOps_: NHAP & XUAT allowed, KIEMKE rejected
+const workerOpsRes = vm.runInContext(`applyOps_([
+  { id: 'w_in_1', loai: 'NHAP', ke: 'K01', tang: 1, o: 1, maVT: 'RB20617', soLuong: 5 },
+  { id: 'w_out_1', loai: 'XUAT', ke: 'K01', tang: 1, o: 1, maVT: 'RB20617', soLuong: 5 },
+  { id: 'w_kk_1', loai: 'KIEMKE', ke: 'K01', tang: 1, o: 1, maVT: 'RB20617', soLuong: 10 }
+], { ma: 'cn01', ten: 'Công nhân 1', vaiTro: 'WORKER' })`, gasRbac.gasSandbox);
+assert.strictEqual(workerOpsRes.results[0].ok, true, 'WORKER NHAP must succeed');
+assert.strictEqual(workerOpsRes.results[1].ok, true, 'WORKER XUAT must succeed');
+assert.strictEqual(workerOpsRes.results[2].ok, false, 'WORKER KIEMKE must be rejected');
+assert.ok(/Công nhân/i.test(workerOpsRes.results[2].error), 'WORKER KIEMKE error must explain permission block');
+
+// THUKHO API permissions
 vm.runInContext(`auth_ = () => ({ ma: 'tk01', ten: 'Thủ kho 1', vaiTro: 'THUKHO' });`, gasRbac.gasSandbox);
-['cleanData', 'archiveLogs', 'deleteItem', 'listUsers', 'addUser'].forEach(fn => {
+['cleanData', 'archiveLogs', 'deleteItem', 'seedSample', 'clearSample', 'listUsers', 'addUser'].forEach(fn => {
   assert.throws(() => vm.runInContext(`API.${fn}({ ma: 'RB20617', mk: '123' })`, gasRbac.gasSandbox), /quản trị|Không có quyền/i, `API.${fn} must reject THUKHO`);
 });
-vm.runInContext(`auth_ = () => ({ ma: 'cn01', ten: 'Worker cũ', vaiTro: 'WORKER' });`, gasRbac.gasSandbox);
-['cleanData', 'listUsers'].forEach(fn => {
-  assert.throws(() => vm.runInContext(`API.${fn}({})`, gasRbac.gasSandbox), /quản trị|Không có quyền/i, `API.${fn} must reject legacy WORKER`);
-});
-vm.runInContext(`auth_ = () => ({ ma: 'tk01', ten: 'Thủ kho 1', vaiTro: 'THUKHO' });`, gasRbac.gasSandbox);
 const tkPlanRes = vm.runInContext(`API.savePlanBatch({ items: [{ ma: 'RB20617', slkh: 50 }] })`, gasRbac.gasSandbox);
 assert.strictEqual(tkPlanRes.updated, 1, 'THUKHO must still be allowed to manage SLKH plan');
 assert.strictEqual(tkPlanRes.kho.logs.length, 0, 'Response for THUKHO must still omit logs');
+const tkMetaRes = vm.runInContext(`API.syncItemsMeta({ items: [{ ma: 'RB20617', ten: 'DIRTZILLA DMX' }] })`, gasRbac.gasSandbox);
+assert.strictEqual(tkMetaRes.updated, 1, 'THUKHO must be allowed to syncItemsMeta');
+const tkSaveRes = vm.runInContext(`API.saveItem({ item: { ma: 'RB20617', ten: 'DIRTZILLA DMX' } })`, gasRbac.gasSandbox);
+assert.ok(tkSaveRes.kho, 'THUKHO must be allowed to saveItem');
+const tkKkRes = vm.runInContext(`applyOps_([
+  { id: 'tk_kk_1', loai: 'KIEMKE', ke: 'K01', tang: 1, o: 1, maVT: 'RB20617', soLuong: 40 }
+], { ma: 'tk01', ten: 'Thủ kho 1', vaiTro: 'THUKHO' })`, gasRbac.gasSandbox);
+assert.strictEqual(tkKkRes.results[0].ok, true, 'THUKHO KIEMKE must succeed');
 
-// 15b. Frontend RBAC HTML markers & route guards
+// ADMIN API permissions
+vm.runInContext(`auth_ = () => ({ ma: 'admin', ten: 'Quản trị', vaiTro: 'ADMIN' });`, gasRbac.gasSandbox);
+const admUsers = vm.runInContext(`API.listUsers({})`, gasRbac.gasSandbox);
+assert.ok(admUsers.length >= 2, 'ADMIN must be able to listUsers');
+
+// 15b. Frontend RBAC HTML markers & route/UI guards
 assert.ok(html.includes('adminOnly:true') && html.includes("id:'log'") && html.includes("id:'settings'"), 'Hệ thống group must be flagged adminOnly:true');
 assert.ok(html.includes('data-go="log" data-admin-only="1"') && html.includes('data-go="settings" data-admin-only="1"'), 'Home system shortcuts must carry data-admin-only="1"');
 assert.ok(html.includes('id="homeLogsPanel" data-admin-only="1"'), 'Home recent logs panel must carry data-admin-only="1"');
+assert.ok(html.includes('id="homeBtnKiemKe" data-go="KIEMKE" data-no-worker="1"'), 'Home KIEMKE button must carry data-no-worker="1"');
+assert.ok(html.includes('id="homePlanBanner" class="panel home-plan-card" style="cursor:pointer" data-go="plan" data-no-worker="1"'), 'Home plan banner must carry data-no-worker="1"');
+assert.ok(html.includes('id="flowTabKiemKe" data-no-worker="1"'), 'Flow KIEMKE tab must carry data-no-worker="1"');
+assert.ok(html.includes('id="findTabs" data-no-worker="1"'), 'Find tabs (Search/Catalog) must carry data-no-worker="1"');
+assert.ok(html.includes("id:'KIEMKE'") && html.includes('noWorker:true'), 'Sidebar KIEMKE must be flagged noWorker:true');
+assert.ok(html.includes("grp:'Giám sát & Báo cáo', noWorker:true"), 'Sidebar Giám sát & Báo cáo group must be flagged noWorker:true');
+assert.ok(html.includes("{ id:'plan', lbl:'Kế hoạch', ico:'target', noWorker:true }"), 'NAV_ITEMS plan button must be flagged noWorker:true');
+assert.ok(html.includes('<option value="WORKER">'), 'User management role select must include WORKER option');
 
 assert.strictEqual(sandbox.roleLabel('ADMIN'), 'Quản trị (ADMIN)');
 assert.strictEqual(sandbox.roleLabel('THUKHO'), 'Thủ kho');
-assert.strictEqual(sandbox.roleLabel('WORKER'), 'Thủ kho');
+assert.strictEqual(sandbox.roleLabel('WORKER'), 'Công nhân');
 
-// Test as THUKHO
-vm.runInContext(`API = ''; SESS = { token: 't', user: { ma: 'tk01', ten: 'Thủ kho 1', vaiTro: 'THUKHO' } };`, sandbox);
+// Populate sandbox stock & item for map/modal RBAC checks
+vm.runInContext(`
+  API = '';
+  Q = [];
+  K = {
+    items: [
+      { ma: 'RB20617', ten: 'DIRTZILLA DMX', model: 'KHUON-DZ', mau: "MEN'S", dvt: 'đôi', po: 'RB20617', so: '3170061111', slkh: 36 }
+    ],
+    stock: [
+      { ke: 'K01', tang: 1, o: 1, maVT: 'RB20617', soLuong: 40 }
+    ],
+    logs: [
+      { thoiGian: '21/11 08:00', loai: 'NHAP', ke: 'K01', tang: 1, o: 1, maVT: 'RB20617', soLuong: 40, nguoi: 'tk01', ghiChu: '' }
+    ]
+  };
+`, sandbox);
+
+// Test as WORKER (Công nhân)
+vm.runInContext(`SESS = { token: 't', user: { ma: 'cn01', ten: 'Công nhân 1', vaiTro: 'WORKER' } };`, sandbox);
+['plan', 'KIEMKE', 'log', 'settings'].forEach(blocked => {
+  sandbox.go(blocked);
+  assert.strictEqual(vm.runInContext('view', sandbox), 'home', `WORKER accessing ${blocked} must be redirected to home`);
+  assert.ok(getMockEl('#toast').textContent.length > 0, `Blocked ${blocked} must show toast`);
+});
+assert.strictEqual(getMockEl('#vPlan').hidden, true, '#vPlan must remain hidden for WORKER');
+assert.strictEqual(getMockEl('#vLog').hidden, true, '#vLog must remain hidden for WORKER');
+assert.strictEqual(getMockEl('#vSettings').hidden, true, '#vSettings must remain hidden for WORKER');
+
+['NHAP', 'XUAT', 'map', 'find'].forEach(allowed => {
+  sandbox.go(allowed);
+  assert.strictEqual(vm.runInContext('view', sandbox), allowed, `WORKER must be allowed on view ${allowed}`);
+});
+assert.strictEqual(getMockEl('#findTabs').hidden, true, '#findTabs must be hidden for WORKER');
+assert.strictEqual(getMockEl('#findCatalogPane').hidden, true, '#findCatalogPane must stay hidden for WORKER');
+assert.strictEqual(getMockEl('#findSearchPane').hidden, false, '#findSearchPane must stay visible for WORKER');
+assert.strictEqual(getMockEl('#title').textContent, 'Tìm kiếm vị trí mũ', 'WORKER find view title must focus on search');
+
+sandbox.renderHome();
+assert.strictEqual(getMockEl('#homePlanBanner').hidden, true, '#homePlanBanner must stay hidden for WORKER');
+assert.strictEqual(getMockEl('#homePlanBanner').innerHTML, '', '#homePlanBanner must stay empty for WORKER');
+assert.strictEqual(getMockEl('#homeBtnKiemKe').hidden, true, '#homeBtnKiemKe must stay hidden for WORKER');
+assert.strictEqual(getMockEl('#homeLogsPanel').hidden, true, '#homeLogsPanel must stay hidden for WORKER');
+
+vm.runInContext(`mapSel = 'K01'; mapSelCell = { ke: 'K01', tang: 1, o: 1 }; renderMapDetail(stockRows());`, sandbox);
+const workerMapDetail = getMockEl('#mapDetail').innerHTML;
+assert.ok(workerMapDetail.includes('cellActIn') && workerMapDetail.includes('cellActOut'), 'WORKER mapDetail must have Nhập & Xuất');
+assert.ok(!workerMapDetail.includes('cellActCnt'), 'WORKER mapDetail must not have Kiểm kê button');
+
+sandbox.openShelfModal('K01', 1, 1);
+const workerModalHtml = getMockEl('#shelfModalBody').innerHTML;
+assert.ok(!workerModalHtml.includes('smBtnCount'), 'WORKER shelfModal must not have Kiểm kê ô button');
+assert.ok(!workerModalHtml.includes('smBtnPrint'), 'WORKER shelfModal must not have In tem QR button');
+assert.ok(!workerModalHtml.includes('data-save-po-note'), 'WORKER shelfModal must not have save PO note button');
+assert.ok(!workerModalHtml.includes('smBtnSaveNote'), 'WORKER shelfModal must not have save slot note button');
+assert.ok(workerModalHtml.includes('smBtnIn') && workerModalHtml.includes('smBtnOut') && workerModalHtml.includes('data-sm-relo'), 'WORKER shelfModal must keep Nhập/Xuất/Sắp kệ');
+assert.ok(workerModalHtml.includes('PO:') && workerModalHtml.includes('SO:'), 'WORKER shelfModal must still display PO & SO tags');
+
+// Test as THUKHO (Thủ kho)
+vm.runInContext(`SESS = { token: 't', user: { ma: 'tk01', ten: 'Thủ kho 1', vaiTro: 'THUKHO' } };`, sandbox);
 sandbox.go('log');
 assert.strictEqual(vm.runInContext('view', sandbox), 'home', 'THUKHO accessing log must be redirected to home');
 assert.strictEqual(getMockEl('#vLog').hidden, true, '#vLog must remain hidden for THUKHO');
@@ -853,6 +979,8 @@ assert.strictEqual(vm.runInContext('view', sandbox), 'home', 'THUKHO accessing s
 assert.strictEqual(getMockEl('#vSettings').hidden, true, '#vSettings must remain hidden for THUKHO');
 
 sandbox.renderHome();
+assert.strictEqual(getMockEl('#homePlanBanner').hidden, false, '#homePlanBanner must be visible for THUKHO');
+assert.strictEqual(getMockEl('#homeBtnKiemKe').hidden, false, '#homeBtnKiemKe must be visible for THUKHO');
 assert.strictEqual(getMockEl('#homeLogsPanel').hidden, true, '#homeLogsPanel must stay hidden for THUKHO');
 assert.strictEqual(getMockEl('#homeLogs').innerHTML, '', '#homeLogs must stay empty for THUKHO');
 
@@ -860,15 +988,12 @@ assert.strictEqual(getMockEl('#homeLogs').innerHTML, '', '#homeLogs must stay em
   sandbox.go(allowed);
   assert.strictEqual(vm.runInContext('view', sandbox), allowed, `THUKHO must be allowed on view ${allowed}`);
 });
+assert.strictEqual(getMockEl('#findTabs').hidden, false, '#findTabs must be visible for THUKHO');
+sandbox.openShelfModal('K01', 1, 1);
+const tkModalHtml = getMockEl('#shelfModalBody').innerHTML;
+assert.ok(tkModalHtml.includes('smBtnCount') && tkModalHtml.includes('smBtnPrint'), 'THUKHO shelfModal must include Kiểm kê & In QR');
 
-// Test as legacy WORKER
-vm.runInContext(`SESS = { token: 't', user: { ma: 'cn01', ten: 'Kho 1', vaiTro: 'WORKER' } };`, sandbox);
-sandbox.go('log');
-assert.strictEqual(vm.runInContext('view', sandbox), 'home', 'Legacy WORKER accessing log must be redirected to home');
-sandbox.go('settings');
-assert.strictEqual(vm.runInContext('view', sandbox), 'home', 'Legacy WORKER accessing settings must be redirected to home');
-
-// Test as ADMIN
+// Test as ADMIN (Quản trị)
 vm.runInContext(`SESS = { token: 't', user: { ma: 'admin', ten: 'Quản trị', vaiTro: 'ADMIN' } };`, sandbox);
 sandbox.go('log');
 assert.strictEqual(vm.runInContext('view', sandbox), 'log', 'ADMIN must be able to view logs');
@@ -879,6 +1004,6 @@ assert.strictEqual(getMockEl('#vSettings').hidden, false);
 sandbox.go('home');
 assert.strictEqual(getMockEl('#homeLogsPanel').hidden, false, 'ADMIN must see #homeLogsPanel on home');
 
-console.log('Test 15 (Phân quyền Thủ kho vs Quản trị ADMIN — Backend Code.gs & Frontend guards/UI): OK');
+console.log('Test 15 (Phân quyền 3 vai trò Công nhân WORKER vs Thủ kho THUKHO vs Quản trị ADMIN): OK');
 
 console.log('\nALL TESTS PASSED SUCCESSFULLY! 🚀');

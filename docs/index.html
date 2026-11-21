@@ -197,6 +197,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   border-top:1px solid var(--line);box-shadow:0 -4px 20px rgba(15,23,42,.06);
   padding:4px 4px max(6px,env(safe-area-inset-bottom));
 }
+.bottom-nav.role-worker{grid-template-columns:repeat(5,1fr)}
 .bottom-nav button{
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   min-height:52px;padding:4px 2px;border-radius:12px;color:var(--muted);font-size:10.5px;font-weight:700;
@@ -322,7 +323,10 @@ section{animation:fadeUp .22s var(--ease)}
 .bar-fill{height:100%;background:linear-gradient(90deg,#3B82F6 0%,#06B6D4 100%);border-radius:99px;transition:width .35s var(--ease)}
 
 .action-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px}
-@media (min-width:640px){.action-grid{grid-template-columns:repeat(3,1fr);gap:14px}}
+@media (min-width:640px){
+  .action-grid{grid-template-columns:repeat(3,1fr);gap:14px}
+  .action-grid.role-worker{grid-template-columns:repeat(2,1fr)}
+}
 .act-tile{
   position:relative;display:flex;align-items:center;gap:14px;padding:20px;border-radius:var(--rad-lg);
   color:#fff;text-align:left;min-height:96px;
@@ -381,6 +385,7 @@ section{animation:fadeUp .22s var(--ease)}
    3-STEP OPERATION FLOW (#vFlow)
    ===================================================================== */
 .mode-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--slate-100);padding:5px;border-radius:14px;margin-bottom:12px}
+.mode-tabs.role-worker{grid-template-columns:repeat(2,1fr)}
 .mode-tabs button{min-height:42px;border-radius:10px;font-size:14px;font-weight:700;color:var(--muted);transition:all .16s}
 .mode-tabs button.on{background:#fff;color:var(--ink);box-shadow:var(--shadow-xs)}
 .mode-tabs button.on[data-mode="NHAP"]{color:var(--c-in)}
@@ -1049,7 +1054,7 @@ section{animation:fadeUp .22s var(--ease)}
       </div>
     </div>
 
-    <div class="action-grid">
+    <div class="action-grid" id="homeActionGrid">
       <button type="button" class="act-tile in" data-go="NHAP">
         <div class="act-ico" data-ico="inbox-in"></div>
         <div><b>NHẬP KHO</b><small>Quét ô → Quét mũ → Nhập SL</small></div>
@@ -1058,13 +1063,13 @@ section{animation:fadeUp .22s var(--ease)}
         <div class="act-ico" data-ico="package-out"></div>
         <div><b>XUẤT KHO</b><small>Quét ô → Chọn mũ → Xuất SL</small></div>
       </button>
-      <button type="button" class="act-tile cnt" data-go="KIEMKE">
+      <button type="button" class="act-tile cnt" id="homeBtnKiemKe" data-go="KIEMKE" data-no-worker="1">
         <div class="act-ico" data-ico="clipboard-check"></div>
         <div><b>KIỂM KÊ Ô</b><small>Quét ô → Đếm thực tế → Cân bằng</small></div>
       </button>
     </div>
 
-    <div id="homePlanBanner" class="panel home-plan-card" style="cursor:pointer" data-go="plan"></div>
+    <div id="homePlanBanner" class="panel home-plan-card" style="cursor:pointer" data-go="plan" data-no-worker="1"></div>
 
     <div class="quick-grid" id="homeQuickGrid">
       <button type="button" class="q-tile q-map" data-go="map">
@@ -1073,7 +1078,7 @@ section{animation:fadeUp .22s var(--ease)}
       </button>
       <button type="button" class="q-tile q-find" data-go="find">
         <div class="q-ico" data-ico="search"></div>
-        <div><b>Tìm &amp; Danh mục</b><span>Tra vị trí · thêm mã mũ</span></div>
+        <div><b id="qFindTitle">Tìm &amp; Danh mục</b><span id="qFindSub">Tra vị trí · thêm mã mũ</span></div>
       </button>
       <button type="button" class="q-tile q-log" data-go="log" data-admin-only="1">
         <div class="q-ico" data-ico="history"></div>
@@ -1099,7 +1104,7 @@ section{animation:fadeUp .22s var(--ease)}
     <div class="mode-tabs" id="flowModeTabs">
       <button type="button" data-mode="NHAP">Nhập kho</button>
       <button type="button" data-mode="XUAT">Xuất kho</button>
-      <button type="button" data-mode="KIEMKE">Kiểm kê &amp; Đối chiếu</button>
+      <button type="button" data-mode="KIEMKE" id="flowTabKiemKe" data-no-worker="1">Kiểm kê &amp; Đối chiếu</button>
     </div>
 
     <!-- ĐỐI CHIẾU FILE KIỂM KÊ & NHẬP - XUẤT - TỒN (GIỐNG TRANG KHO ĐẾ) -->
@@ -1313,7 +1318,7 @@ section{animation:fadeUp .22s var(--ease)}
 
   <!-- TÌM KIẾM & DANH MỤC MŨ -->
   <section id="vFind" hidden>
-    <div class="mode-tabs" id="findTabs" style="grid-template-columns:1fr 1fr">
+    <div class="mode-tabs" id="findTabs" data-no-worker="1" style="grid-template-columns:1fr 1fr">
       <button type="button" class="on" data-ft="search">Tìm vị trí mũ</button>
       <button type="button" data-ft="catalog">Danh mục mã mũ</button>
     </div>
@@ -1533,16 +1538,18 @@ section{animation:fadeUp .22s var(--ease)}
     <div class="panel" id="adminCard" hidden>
       <div class="panel-head"><h2 class="panel-title">Quản lý tài khoản &amp; Phân quyền</h2></div>
       <div class="small muted" style="margin-bottom:10px;padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid var(--line)">
-        <b>Phân quyền rõ ràng:</b><br>
-        • <b>Thủ kho (THUKHO):</b> Nhập kho, Xuất kho, Kiểm kê &amp; Đối chiếu, Sơ đồ 26 kệ, Tra cứu &amp; Danh mục (thêm/sửa), Kiểm soát Kế hoạch (SLKH). <b>Không thấy</b> mục Hệ thống (Nhật ký thao tác, Cài đặt &amp; Kết nối, Quản lý tài khoản, Xoá/Làm sạch dữ liệu).<br>
-        • <b>Quản trị (ADMIN):</b> Toàn quyền nghiệp vụ kho + mục <b>Hệ thống</b> (Nhật ký, Kết nối Sheet, Làm sạch, Xoá mã mũ, Tạo &amp; phân quyền tài khoản).
+        <b>Phân quyền rõ ràng (3 vai trò):</b><br>
+        • <b>Công nhân (WORKER):</b> Chỉ có <b>Nhập kho</b>, <b>Xuất kho</b>, <b>Xem sơ đồ 26 kệ</b> và <b>Tìm kiếm vị trí mũ</b>. <b>Không có</b> nút Kiểm soát Kế hoạch (SLKH), Kiểm kê &amp; Đối chiếu, Danh mục thêm/sửa mã, In tem QR, Nhật ký hay Cài đặt hệ thống.<br>
+        • <b>Thủ kho (THUKHO):</b> Nhập kho, Xuất kho, Kiểm kê &amp; Đối chiếu, Sơ đồ 26 kệ, Tra cứu &amp; Danh mục (thêm/sửa), <b>Kiểm soát Kế hoạch (SLKH)</b>. Không thấy mục Hệ thống (Nhật ký, Cài đặt &amp; Kết nối, Quản lý tài khoản, Xoá/Làm sạch dữ liệu).<br>
+        • <b>Quản trị (ADMIN):</b> Toàn quyền nghiệp vụ kho + mục <b>Hệ thống</b> (Nhật ký, Kết nối Sheet, Làm sạch, Xoá mã mũ, Tạo &amp; phân quyền 3 vai trò tài khoản).
       </div>
       <div class="grid-2">
-        <input class="inp" id="nuMa" placeholder="Mã NV (VD: tk01)">
+        <input class="inp" id="nuMa" placeholder="Mã NV (VD: cn01, tk01)">
         <input class="inp" id="nuTen" placeholder="Họ tên">
         <input class="inp" id="nuMk" placeholder="Mật khẩu">
         <select class="inp" id="nuRole">
-          <option value="THUKHO">Thủ kho (Nghiệp vụ kho &amp; SLKH)</option>
+          <option value="WORKER">Công nhân (Chỉ Nhập · Xuất · Sơ đồ kệ · Tìm kiếm — không có Kiểm soát)</option>
+          <option value="THUKHO">Thủ kho (Nghiệp vụ kho · Kiểm kê · Kiểm soát SLKH)</option>
           <option value="ADMIN">Quản trị (ADMIN — Toàn quyền + Hệ thống)</option>
         </select>
       </div>
@@ -1732,9 +1739,9 @@ function mountStaticIcons(){
     { grp:'Nghiệp vụ kho', items:[
       { id:'NHAP',   lbl:'Nhập kho', ico:'inbox-in' },
       { id:'XUAT',   lbl:'Xuất kho', ico:'package-out' },
-      { id:'KIEMKE', lbl:'Kiểm kê & Đối chiếu', ico:'clipboard-check', badge:'File N-X-T' }
+      { id:'KIEMKE', lbl:'Kiểm kê & Đối chiếu', ico:'clipboard-check', badge:'File N-X-T', noWorker:true }
     ]},
-    { grp:'Giám sát & Báo cáo', items:[
+    { grp:'Giám sát & Báo cáo', noWorker:true, items:[
       { id:'plan',   lbl:'Kiểm soát Kế hoạch', ico:'target', badge:'SLKH' }
     ]},
     { grp:'Hệ thống', adminOnly:true, items:[
@@ -1744,8 +1751,8 @@ function mountStaticIcons(){
   ];
   if ($('#sideMenu')) {
     $('#sideMenu').innerHTML = SIDE_GROUPS.map(g =>
-      '<div class="side-grp"' + (g.adminOnly ? ' data-admin-only="1"' : '') + '>' + g.grp + '</div>' +
-      g.items.map(n => '<button type="button" class="side-btn" data-nav="' + n.id + '"' + (g.adminOnly ? ' data-admin-only="1"' : '') + ' title="' + n.lbl + '">' +
+      '<div class="side-grp"' + (g.adminOnly ? ' data-admin-only="1"' : '') + (g.noWorker ? ' data-no-worker="1"' : '') + '>' + g.grp + '</div>' +
+      g.items.map(n => '<button type="button" class="side-btn" data-nav="' + n.id + '"' + (g.adminOnly ? ' data-admin-only="1"' : '') + ((g.noWorker || n.noWorker) ? ' data-no-worker="1"' : '') + ' title="' + n.lbl + '">' +
         icon(n.ico) + '<span>' + n.lbl + '</span>' +
         (n.badge ? '<em class="side-badge" style="font-style:normal">' + n.badge + '</em>' : '') +
       '</button>').join('')
@@ -1757,12 +1764,12 @@ function mountStaticIcons(){
   const NAV_ITEMS = [
     { id:'home', lbl:'Trang chủ', ico:'home' },
     { id:'NHAP', lbl:'Thao tác', ico:'scan' },
-    { id:'plan', lbl:'Kế hoạch', ico:'target' },
+    { id:'plan', lbl:'Kế hoạch', ico:'target', noWorker:true },
     { id:'ghCam', lbl:'Camera GH', ico:'camera', isCam:true },
     { id:'map',  lbl:'Sơ đồ 26 kệ', ico:'map' },
     { id:'find', lbl:'Tra cứu', ico:'search' }
   ];
-  const navHtml = NAV_ITEMS.map(n => '<button type="button" data-nav="' + n.id + '">' + icon(n.ico) + '<span>' + n.lbl + '</span></button>').join('');
+  const navHtml = NAV_ITEMS.map(n => '<button type="button" data-nav="' + n.id + '"' + (n.noWorker ? ' data-no-worker="1"' : '') + '>' + icon(n.ico) + '<span>' + n.lbl + '</span></button>').join('');
   $('#topNav').innerHTML = navHtml;
   $('#bottomNav').innerHTML = navHtml;
   $$('[data-nav]').forEach(b => b.onclick = () => go(b.dataset.nav));
@@ -1795,20 +1802,61 @@ let soundOn = load(LS.sound, true);
 let autoCam = load(LS.cam, true);
 let view = '', syncing = false, online = navigator.onLine;
 
-function isAdminUser(u){
+function normalizeRole(vaiTro){
+  const r = String(vaiTro || '').trim().toUpperCase();
+  if (r === 'ADMIN' || r === 'QUANTRI' || r === 'QUẢN TRỊ') return 'ADMIN';
+  if (r === 'THUKHO' || r === 'THU_KHO' || r === 'THỦ KHO' || r === 'KEEPER') return 'THUKHO';
+  if (r === 'WORKER' || r === 'CONGNHAN' || r === 'CONG_NHAN' || r === 'CÔNG NHÂN' || r === 'CN') return 'WORKER';
+  return 'WORKER';
+}
+function getUserRole(u){
   const usr = u || (SESS && SESS.user);
-  return String((usr && usr.vaiTro) || '').trim().toUpperCase() === 'ADMIN';
+  if (!usr) return '';
+  return normalizeRole(usr.vaiTro);
+}
+function isAdminUser(u){
+  return getUserRole(u) === 'ADMIN';
+}
+function isWorkerUser(u){
+  return getUserRole(u) === 'WORKER';
+}
+function isKeeperOrAdmin(u){
+  const r = getUserRole(u);
+  return r === 'ADMIN' || r === 'THUKHO';
 }
 function roleLabel(vaiTro){
-  const r = String(vaiTro || '').trim().toUpperCase();
+  const r = normalizeRole(vaiTro);
   if (r === 'ADMIN') return 'Quản trị (ADMIN)';
-  return 'Thủ kho';
+  if (r === 'THUKHO') return 'Thủ kho';
+  return 'Công nhân';
 }
 function applyRoleUi(){
   const isAdmin = isAdminUser();
+  const isWorker = isWorkerUser();
+  const canControl = isKeeperOrAdmin();
   $$('[data-admin-only="1"]').forEach(el => { el.hidden = !isAdmin; });
-  const qg = $('#homeQuickGrid');
-  if (qg) qg.classList.toggle('role-keeper', !isAdmin);
+  $$('[data-no-worker="1"]').forEach(el => { el.hidden = !canControl; });
+  if ($('#homeBtnKiemKe')) $('#homeBtnKiemKe').hidden = !canControl;
+  if ($('#homePlanBanner')) {
+    $('#homePlanBanner').hidden = !canControl;
+    if (!canControl) $('#homePlanBanner').innerHTML = '';
+  }
+  if ($('#flowTabKiemKe')) $('#flowTabKiemKe').hidden = !canControl;
+  if ($('#homeActionGrid')) $('#homeActionGrid').classList.toggle('role-worker', isWorker);
+  if ($('#homeQuickGrid')) $('#homeQuickGrid').classList.toggle('role-keeper', !isAdmin);
+  if ($('#flowModeTabs')) $('#flowModeTabs').classList.toggle('role-worker', isWorker);
+  if ($('#bottomNav')) $('#bottomNav').classList.toggle('role-worker', isWorker);
+  if ($('#qFindTitle')) $('#qFindTitle').textContent = isWorker ? 'Tìm kiếm mũ' : 'Tìm & Danh mục';
+  if ($('#qFindSub')) $('#qFindSub').textContent = isWorker ? 'Tra nhanh vị trí kệ · ô' : 'Tra vị trí · thêm mã mũ';
+  $$('#sideMenu [data-nav="find"] span').forEach(sp => { sp.textContent = isWorker ? 'Tìm kiếm mũ' : 'Tra cứu & Danh mục'; });
+  $$('#bottomNav [data-nav="NHAP"] span, #topNav [data-nav="NHAP"] span').forEach(sp => { sp.textContent = isWorker ? 'Nhập / Xuất' : 'Thao tác'; });
+  $$('#bottomNav [data-nav="find"] span, #topNav [data-nav="find"] span').forEach(sp => { sp.textContent = isWorker ? 'Tìm kiếm' : 'Tra cứu'; });
+  if ($('#findTabs')) $('#findTabs').hidden = isWorker;
+  if (isWorker) {
+    if ($('#findSearchPane')) $('#findSearchPane').hidden = false;
+    if ($('#findCatalogPane')) $('#findCatalogPane').hidden = true;
+    $$('#findTabs button').forEach(b => b.classList.toggle('on', b.dataset.ft === 'search'));
+  }
 }
 
 /* ---------------------- Tồn kho & Danh mục ---------------------- */
@@ -2482,6 +2530,12 @@ function go(v, arg){
     toast('Chức năng này chỉ dành cho Quản trị (ADMIN)', 'err');
     v = 'home';
   }
+  if (SESS && isWorkerUser() && (v === 'plan' || v === 'KIEMKE')) {
+    toast(v === 'plan'
+      ? 'Tài khoản Công nhân không có quyền Kiểm soát Kế hoạch (SLKH)'
+      : 'Tài khoản Công nhân không có quyền Kiểm kê & Đối chiếu', 'err');
+    v = 'home';
+  }
   hideAllLiveSuggestions();
   camStop(); camHandler = null;
   view = v;
@@ -2493,7 +2547,7 @@ function go(v, arg){
   $('#topNav').hidden = !loggedIn;
   $('#bottomNav').hidden = !loggedIn;
   $('#btnBack').hidden = v === 'home' || v === 'login';
-  $('#title').textContent = TITLES[v] || 'Kho Mũ TBS';
+  $('#title').textContent = (v === 'find' && isWorkerUser()) ? 'Tìm kiếm vị trí mũ' : (TITLES[v] || 'Kho Mũ TBS');
   applyRoleUi();
 
   const navKey = (v === 'NHAP' || v === 'XUAT' || v === 'KIEMKE') ? 'NHAP' : v;
@@ -2505,7 +2559,13 @@ function go(v, arg){
   else if (v === 'NHAP' || v === 'XUAT' || v === 'KIEMKE') { $('#vFlow').hidden = false; flowStart(v, arg); }
   else if (v === 'plan') { $('#vPlan').hidden = false; renderPlan(); }
   else if (v === 'find') {
-    $('#vFind').hidden = false; $('#findCam').hidden = true; renderFind(); renderCatalog();
+    $('#vFind').hidden = false; $('#findCam').hidden = true;
+    if (isWorkerUser()) {
+      if ($('#findSearchPane')) $('#findSearchPane').hidden = false;
+      if ($('#findCatalogPane')) $('#findCatalogPane').hidden = true;
+    }
+    renderFind();
+    if (!isWorkerUser()) renderCatalog();
     setTimeout(() => $('#findInp').focus(), 50);
     camHandler = txt => { beep(true); $('#findInp').value = parseItem(txt); renderFind(); };
   }
@@ -2521,7 +2581,7 @@ function refreshView(){
   else if (view === 'plan') renderPlan();
   else if (view === 'map') renderMap();
   else if (view === 'log') renderLog();
-  else if (view === 'find') { renderFind(); renderCatalog(); }
+  else if (view === 'find') { renderFind(); if (!isWorkerUser()) renderCatalog(); }
 }
 
 $('#btnBack').onclick = () => {
@@ -2547,33 +2607,40 @@ function renderHome(){
   $('#stFillBar').style.width = pct + '%';
   $('#stItems').textContent = fmt(itemCodes.size);
 
+  const canControl = isKeeperOrAdmin();
+  if ($('#homeBtnKiemKe')) $('#homeBtnKiemKe').hidden = !canControl;
   const pb = $('#homePlanBanner');
-  if (pb && typeof getPlanControlSummary === 'function') {
-    const s = getPlanControlSummary();
-    if (s.plannedItems > 0) {
-      pb.innerHTML =
-        '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">' +
-          '<div>' +
-            '<div style="font-size:14.5px;font-weight:800;color:#0f172a">🎯 Kiểm soát số lượng Kế hoạch (SLKH) · <span style="color:#0369a1">' + fmt(s.plannedItems) + ' mã có KH</span></div>' +
-            '<div class="small muted" style="margin-top:4px;display:flex;gap:12px;flex-wrap:wrap">' +
-              '<span>SLKH: <b style="color:#0f172a">' + fmt(s.totalSlkh) + '</b></span>' +
-              '<span>Đã nhập: <b style="color:#0f766e">' + fmt(s.totalIn) + '</b></span>' +
-              '<span>Đã xuất: <b style="color:#c2410c">' + fmt(s.totalOut) + '</b></span>' +
-              (s.shortCount > 0 ? '<span style="color:#be123c">⚠ Thiếu nhập: <b>' + s.shortCount + '</b> mã (' + fmt(s.totalShortIn) + ' đôi)</span>' : '<span style="color:#15803d">✓ Đủ nhập theo KH</span>') +
-              '<span style="color:#15803d">Đủ KH: <b>' + s.doneCount + '</b>/' + s.plannedItems + '</span>' +
+  if (pb) {
+    pb.hidden = !canControl;
+    if (!canControl) {
+      pb.innerHTML = '';
+    } else if (typeof getPlanControlSummary === 'function') {
+      const s = getPlanControlSummary();
+      if (s.plannedItems > 0) {
+        pb.innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">' +
+            '<div>' +
+              '<div style="font-size:14.5px;font-weight:800;color:#0f172a">🎯 Kiểm soát số lượng Kế hoạch (SLKH) · <span style="color:#0369a1">' + fmt(s.plannedItems) + ' mã có KH</span></div>' +
+              '<div class="small muted" style="margin-top:4px;display:flex;gap:12px;flex-wrap:wrap">' +
+                '<span>SLKH: <b style="color:#0f172a">' + fmt(s.totalSlkh) + '</b></span>' +
+                '<span>Đã nhập: <b style="color:#0f766e">' + fmt(s.totalIn) + '</b></span>' +
+                '<span>Đã xuất: <b style="color:#c2410c">' + fmt(s.totalOut) + '</b></span>' +
+                (s.shortCount > 0 ? '<span style="color:#be123c">⚠ Thiếu nhập: <b>' + s.shortCount + '</b> mã (' + fmt(s.totalShortIn) + ' đôi)</span>' : '<span style="color:#15803d">✓ Đủ nhập theo KH</span>') +
+                '<span style="color:#15803d">Đủ KH: <b>' + s.doneCount + '</b>/' + s.plannedItems + '</span>' +
+              '</div>' +
             '</div>' +
-          '</div>' +
-          '<span class="btn btn-pri btn-sm">Xem báo cáo →</span>' +
-        '</div>';
-    } else {
-      pb.innerHTML =
-        '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">' +
-          '<div>' +
-            '<div style="font-size:14.5px;font-weight:800;color:#0f172a">🎯 Kiểm soát số lượng Kế hoạch (SLKH)</div>' +
-            '<div class="small muted" style="margin-top:3px">Theo dõi đối chiếu Nhập / Xuất / Tồn với Kế hoạch (Thiếu · Đủ · Dư · Báo cáo) dành cho Thủ kho &amp; Admin.</div>' +
-          '</div>' +
-          '<span class="btn btn-ghost btn-sm" style="border-color:#38bdf8;color:#0369a1;font-weight:800">Mở trang Kế hoạch →</span>' +
-        '</div>';
+            '<span class="btn btn-pri btn-sm">Xem báo cáo →</span>' +
+          '</div>';
+      } else {
+        pb.innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">' +
+            '<div>' +
+              '<div style="font-size:14.5px;font-weight:800;color:#0f172a">🎯 Kiểm soát số lượng Kế hoạch (SLKH)</div>' +
+              '<div class="small muted" style="margin-top:3px">Theo dõi đối chiếu Nhập / Xuất / Tồn với Kế hoạch (Thiếu · Đủ · Dư · Báo cáo) dành cho Thủ kho &amp; Admin.</div>' +
+            '</div>' +
+            '<span class="btn btn-ghost btn-sm" style="border-color:#38bdf8;color:#0369a1;font-weight:800">Mở trang Kế hoạch →</span>' +
+          '</div>';
+      }
     }
   }
 
@@ -2597,6 +2664,11 @@ let camManualOff = false;
 const camOn = () => !camManualOff;
 
 function flowStart(mode, presetLoc){
+  if (mode === 'KIEMKE' && isWorkerUser()) {
+    toast('Tài khoản Công nhân không có quyền Kiểm kê & Đối chiếu', 'err');
+    go('home');
+    return;
+  }
   const loc = presetLoc ? { ke:presetLoc.ke, tang:presetLoc.tang, o:presetLoc.o } : (F.mode === mode && F.loc ? F.loc : null);
   const presetMa = presetLoc && presetLoc.ma ? String(presetLoc.ma).toUpperCase() : '';
   F = { mode, step:'loc', loc, ma:presetMa };
@@ -2615,7 +2687,7 @@ function flowStart(mode, presetLoc){
   else if (F.loc) flowStep(mode === 'KIEMKE' ? 'count' : 'item');
   else flowStep('loc');
 }
-$$('#flowModeTabs button').forEach(b => b.onclick = () => { F.mode = b.dataset.mode; go(b.dataset.mode); });
+$$('#flowModeTabs button').forEach(b => b.onclick = () => { go(b.dataset.mode); });
 
 function flowBack(){
   if (F.step === 'qty') flowStep('item');
@@ -4590,6 +4662,7 @@ function renderMap(arg){
 
 function renderMapDetail(rows){
   const d = $('#mapDetail'); d.hidden = false;
+  const isWorker = isWorkerUser();
   const items = rows.filter(r => r.ke === mapSel).sort((a, b) => b.tang - a.tang || a.o - b.o);
   const rackQty = items.reduce((a, x) => a + x.soLuong, 0);
   const cList = mapSelCell && mapSelCell.ke === mapSel ? cellItems(mapSelCell, rows) : [];
@@ -4611,7 +4684,7 @@ function renderMapDetail(rows){
             '<div class="row" style="gap:6px">' +
               '<button type="button" class="btn btn-pri btn-sm" id="cellActIn">+ Nhập ô</button>' +
               '<button type="button" class="btn btn-ghost btn-sm" id="cellActOut">− Xuất ô</button>' +
-              '<button type="button" class="btn btn-ghost btn-sm" id="cellActCnt">Kiểm kê</button>' +
+              (!isWorker ? '<button type="button" class="btn btn-ghost btn-sm" id="cellActCnt">Kiểm kê</button>' : '') +
             '</div>' +
           '</div>' +
           '<div class="list">' + (cList.map(r => '<div class="li"><div class="li-grow"><b>' + esc(r.maVT) + '</b><div class="small muted">' + esc(itemLabel(r.maVT)) + '</div>' + itemMetaBadgesHtml(r.maVT) + '</div><span class="li-num num-tab">' + fmt(r.soLuong) + '</span></div>').join('') || '<div class="small muted">Ô hiện chưa có hàng.</div>') + '</div>' +
@@ -4803,6 +4876,7 @@ function closeShelfModal() {
 }
 
 function renderShelfModal() {
+  const isWorker = isWorkerUser();
   const ke = shelfModalState.ke;
   const tang = shelfModalState.tang;
   const o = shelfModalState.o;
@@ -4859,48 +4933,53 @@ function renderShelfModal() {
   const curSlotTime = curSlotNoteObj && curSlotNoteObj.time ? curSlotNoteObj.time : '';
   const curSlotUser = curSlotNoteObj && curSlotNoteObj.user ? curSlotNoteObj.user : '';
 
-  let noteSectionHtml = '<div class="shelf-note-box">' +
-    '<div class="shelf-note-head">' +
-      '<span class="lbl" style="color:#b45309;font-weight:800;display:flex;align-items:center;gap:6px">' +
-        '📝 GHI CHÚ Ô KỆ & PHÂN XƯỞNG / CHUYỀN GÒ' +
-      '</span>' +
-      (curSlotNote ? '<span class="badge" style="background:#fef3c7;color:#b45309;font-weight:700">● Đã có ghi chú</span>' : '<span class="xs muted">Chưa có ghi chú</span>') +
-    '</div>' +
-    (curSlotNote ? (
-      '<div class="shelf-note-cur">' +
-        '<div class="shelf-note-text">📌 <b>' + esc(curSlotNote) + '</b></div>' +
-        (curSlotTime ? '<div class="xs muted" style="margin-top:3px">Cập nhật: ' + esc(curSlotTime) + (curSlotUser ? ' · Người ghi: ' + esc(curSlotUser) : '') + '</div>' : '') +
-      '</div>'
-    ) : '') +
-    '<div style="margin-top:8px">' +
-      '<div class="xs muted" style="font-weight:700;margin-bottom:5px">CHỌN NHANH ĐỂ THÊM VÀO GHI CHÚ (CHUYỀN GÒ / PX / NỢ / THIẾU):</div>' +
-      '<div class="note-chip-row">' +
-        '<button type="button" class="nchip px" data-add-tag="PX A2">PX A2</button>' +
-        '<button type="button" class="nchip px" data-add-tag="PX B2">PX B2</button>' +
-        '<button type="button" class="nchip ch" data-add-tag="Gò Line 1">Gò Line 1</button>' +
-        '<button type="button" class="nchip ch" data-add-tag="Gò Line 2">Gò Line 2</button>' +
-        '<button type="button" class="nchip ch" data-add-tag="Gò Line 3">Gò Line 3</button>' +
-        '<button type="button" class="nchip ch" data-add-tag="Gò truyền thống 1">Gò truyền thống 1</button>' +
-        '<button type="button" class="nchip ch" data-add-tag="Gò truyền thống 2">Gò truyền thống 2</button>' +
-        '<button type="button" class="nchip st" data-add-tag="Giao thiếu">⚠️ Giao thiếu</button>' +
-        '<button type="button" class="nchip st" data-add-tag="Còn nợ">⚠️ Còn nợ</button>' +
-        '<button type="button" class="nchip warn" data-add-tag="Chờ bù hàng">Chờ bù hàng</button>' +
-        '<button type="button" class="nchip ch" data-add-tag="Đơn gấp xuất">Đơn gấp xuất</button>' +
+  let noteSectionHtml = '';
+  if (!isWorker) {
+    noteSectionHtml = '<div class="shelf-note-box">' +
+      '<div class="shelf-note-head">' +
+        '<span class="lbl" style="color:#b45309;font-weight:800;display:flex;align-items:center;gap:6px">' +
+          '📝 GHI CHÚ Ô KỆ & PHÂN XƯỞNG / CHUYỀN GÒ' +
+        '</span>' +
+        (curSlotNote ? '<span class="badge" style="background:#fef3c7;color:#b45309;font-weight:700">● Đã có ghi chú</span>' : '<span class="xs muted">Chưa có ghi chú</span>') +
       '</div>' +
-      '<div class="row" style="margin-top:8px;gap:8px">' +
-        '<input type="text" class="inp" id="smNoteInput" placeholder="Nhập ghi chú cho ' + esc(code) + ' (VD: Gò Line 3 PX A2, Gò truyền thống 2, Giao thiếu 50 đôi...)" value="' + esc(curSlotNote) + '">' +
-        '<button type="button" class="btn btn-pri btn-sm" id="smBtnSaveNote" style="white-space:nowrap">💾 Lưu ghi chú</button>' +
-        (curSlotNote ? '<button type="button" class="btn btn-ghost btn-sm" id="smBtnClearNote" style="color:var(--rose-600);white-space:nowrap">Xoá</button>' : '') +
+      (curSlotNote ? (
+        '<div class="shelf-note-cur">' +
+          '<div class="shelf-note-text">📌 <b>' + esc(curSlotNote) + '</b></div>' +
+          (curSlotTime ? '<div class="xs muted" style="margin-top:3px">Cập nhật: ' + esc(curSlotTime) + (curSlotUser ? ' · Người ghi: ' + esc(curSlotUser) : '') + '</div>' : '') +
+        '</div>'
+      ) : '') +
+      '<div style="margin-top:8px">' +
+        '<div class="xs muted" style="font-weight:700;margin-bottom:5px">CHỌN NHANH ĐỂ THÊM VÀO GHI CHÚ (CHUYỀN GÒ / PX / NỢ / THIẾU):</div>' +
+        '<div class="note-chip-row">' +
+          '<button type="button" class="nchip px" data-add-tag="PX A2">PX A2</button>' +
+          '<button type="button" class="nchip px" data-add-tag="PX B2">PX B2</button>' +
+          '<button type="button" class="nchip ch" data-add-tag="Gò Line 1">Gò Line 1</button>' +
+          '<button type="button" class="nchip ch" data-add-tag="Gò Line 2">Gò Line 2</button>' +
+          '<button type="button" class="nchip ch" data-add-tag="Gò Line 3">Gò Line 3</button>' +
+          '<button type="button" class="nchip ch" data-add-tag="Gò truyền thống 1">Gò truyền thống 1</button>' +
+          '<button type="button" class="nchip ch" data-add-tag="Gò truyền thống 2">Gò truyền thống 2</button>' +
+          '<button type="button" class="nchip st" data-add-tag="Giao thiếu">⚠️ Giao thiếu</button>' +
+          '<button type="button" class="nchip st" data-add-tag="Còn nợ">⚠️ Còn nợ</button>' +
+          '<button type="button" class="nchip warn" data-add-tag="Chờ bù hàng">Chờ bù hàng</button>' +
+          '<button type="button" class="nchip ch" data-add-tag="Đơn gấp xuất">Đơn gấp xuất</button>' +
+        '</div>' +
+        '<div class="row" style="margin-top:8px;gap:8px">' +
+          '<input type="text" class="inp" id="smNoteInput" placeholder="Nhập ghi chú cho ' + esc(code) + ' (VD: Gò Line 3 PX A2, Gò truyền thống 2, Giao thiếu 50 đôi...)" value="' + esc(curSlotNote) + '">' +
+          '<button type="button" class="btn btn-pri btn-sm" id="smBtnSaveNote" style="white-space:nowrap">💾 Lưu ghi chú</button>' +
+          (curSlotNote ? '<button type="button" class="btn btn-ghost btn-sm" id="smBtnClearNote" style="color:var(--rose-600);white-space:nowrap">Xoá</button>' : '') +
+        '</div>' +
       '</div>' +
-    '</div>' +
-  '</div>';
+    '</div>';
+  } else if (curSlotNote) {
+    noteSectionHtml = '<div class="shelf-note-box"><div class="shelf-note-cur" style="margin:0"><div class="shelf-note-text">📌 Ghi chú ô: <b>' + esc(curSlotNote) + '</b></div></div></div>';
+  }
 
   // 2. Thẻ thống kê KPI
   const uniqueItems = Array.from(new Set(targetRows.map(r => r.maVT)));
   let statsHtml = '<div class="shelf-stats">' +
     '<div class="shelf-stat"><span class="lbl">Tồn vị trí này</span><b style="color:#0d9488">' + fmt(targetQty) + ' đôi</b><span class="small">' + (tang && o ? 'Tại ' + code : 'Toàn kệ ' + ke) + '</span></div>' +
     '<div class="shelf-stat"><span class="lbl">Chủng loại mũ</span><b>' + uniqueItems.length + ' loại</b><span class="small">' + targetRows.length + ' dòng vị trí</span></div>' +
-    '<div class="shelf-stat"><span class="lbl">Trạng thái ô</span><b>' + (targetQty > 0 ? '<span style="color:#15803d">● Có hàng</span>' : '<span style="color:#64748b">○ Trống</span>') + '</b><span class="small">' + (targetQty > 0 ? 'Sẵn sàng xuất/kiểm' : 'Sẵn sàng nhập hàng') + '</span></div>' +
+    '<div class="shelf-stat"><span class="lbl">Trạng thái ô</span><b>' + (targetQty > 0 ? '<span style="color:#15803d">● Có hàng</span>' : '<span style="color:#64748b">○ Trống</span>') + '</b><span class="small">' + (targetQty > 0 ? (isWorker ? 'Sẵn sàng xuất hàng' : 'Sẵn sàng xuất/kiểm') : 'Sẵn sàng nhập hàng') + '</span></div>' +
     '<div class="shelf-stat"><span class="lbl">Khu vực kho</span><b>' + (keNum <= 13 ? 'Dãy A' : 'Dãy B') + '</b><span class="small">Kệ ' + ke + ' (' + usedCellsOnRack + '/12 ô có hàng)</span></div>' +
   '</div>';
 
@@ -4950,31 +5029,36 @@ function renderShelfModal() {
             (!o ? '<span class="tag" style="background:#f1f5f9;color:#475569;font-weight:700">Vị trí: ' + r.ke + '-T' + r.tang + '-O' + r.o + '</span>' : '') +
           '</div>' +
 
-          '<!-- Ghi chú riêng cho từng PO -->' +
-          '<div style="margin-top:10px;padding:9px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-              '<span class="xs muted" style="font-weight:800;color:#0284c7">📝 GHI CHÚ RIÊNG CHO PO NÀY:</span>' +
-              (curPoNote ? '<span class="tag" style="background:#fef3c7;color:#b45309;font-weight:700;font-size:11px">Đã ghi chú</span>' : '') +
-            '</div>' +
-            (curPoNote ? '<div style="font-size:13.5px;font-weight:700;color:#92400e;margin-bottom:6px">📌 ' + esc(curPoNote) + '</div>' : '') +
-            '<div class="note-chip-row" style="margin-bottom:6px">' +
-              '<button type="button" class="nchip px" data-po-chip="' + esc(poKey) + '" data-val="PX A2">PX A2</button>' +
-              '<button type="button" class="nchip px" data-po-chip="' + esc(poKey) + '" data-val="PX B2">PX B2</button>' +
-              '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Gò Line 1">Gò Line 1</button>' +
-              '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Gò Line 2">Gò Line 2</button>' +
-              '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Gò Line 3">Gò Line 3</button>' +
-              '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Gò truyền thống 1">Gò truyền thống 1</button>' +
-              '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Gò truyền thống 2">Gò truyền thống 2</button>' +
-              '<button type="button" class="nchip st" data-po-chip="' + esc(poKey) + '" data-val="Giao thiếu">Giao thiếu</button>' +
-              '<button type="button" class="nchip st" data-po-chip="' + esc(poKey) + '" data-val="Còn nợ">Còn nợ</button>' +
-              '<button type="button" class="nchip warn" data-po-chip="' + esc(poKey) + '" data-val="Chờ bù hàng">Chờ bù</button>' +
-            '</div>' +
-            '<div class="row" style="gap:6px">' +
-              '<input type="text" class="inp" id="poNoteInp_' + esc(poKey) + '" placeholder="Ghi chú cho PO (VD: Gò Line 3 PX A2, Gò truyền thống 2, Giao thiếu 50 đôi...)" value="' + esc(curPoNote) + '" style="font-size:13px;padding:6px 10px">' +
-              '<button type="button" class="btn btn-pri btn-sm" data-save-po-note="' + esc(poKey) + '" style="font-size:12px;padding:6px 12px;white-space:nowrap">💾 Lưu PO</button>' +
-              (curPoNote ? '<button type="button" class="btn btn-ghost btn-sm" data-clear-po-note="' + esc(poKey) + '" style="font-size:12px;padding:6px 10px;color:var(--rose-600);white-space:nowrap">Xoá</button>' : '') +
-            '</div>' +
-          '</div>' +
+          (isWorker
+            ? (curPoNote ? '<div style="margin-top:8px;padding:7px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;font-size:13px;font-weight:700;color:#92400e">📌 Ghi chú PO: ' + esc(curPoNote) + '</div>' : '')
+            : (
+              '<!-- Ghi chú riêng cho từng PO -->' +
+              '<div style="margin-top:10px;padding:9px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+                  '<span class="xs muted" style="font-weight:800;color:#0284c7">📝 GHI CHÚ RIÊNG CHO PO NÀY:</span>' +
+                  (curPoNote ? '<span class="tag" style="background:#fef3c7;color:#b45309;font-weight:700;font-size:11px">Đã ghi chú</span>' : '') +
+                '</div>' +
+                (curPoNote ? '<div style="font-size:13.5px;font-weight:700;color:#92400e;margin-bottom:6px">📌 ' + esc(curPoNote) + '</div>' : '') +
+                '<div class="note-chip-row" style="margin-bottom:6px">' +
+                  '<button type="button" class="nchip px" data-po-chip="' + esc(poKey) + '" data-val="PX A2">PX A2</button>' +
+                  '<button type="button" class="nchip px" data-po-chip="' + esc(poKey) + '" data-val="PX B2">PX B2</button>' +
+                  '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Gò Line 1">Gò Line 1</button>' +
+                  '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Gò Line 2">Gò Line 2</button>' +
+                  '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Gò Line 3">Gò Line 3</button>' +
+                  '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Gò truyền thống 1">Gò truyền thống 1</button>' +
+                  '<button type="button" class="nchip ch" data-po-chip="' + esc(poKey) + '" data-val="Gò truyền thống 2">Gò truyền thống 2</button>' +
+                  '<button type="button" class="nchip st" data-po-chip="' + esc(poKey) + '" data-val="Giao thiếu">Giao thiếu</button>' +
+                  '<button type="button" class="nchip st" data-po-chip="' + esc(poKey) + '" data-val="Còn nợ">Còn nợ</button>' +
+                  '<button type="button" class="nchip warn" data-po-chip="' + esc(poKey) + '" data-val="Chờ bù hàng">Chờ bù</button>' +
+                '</div>' +
+                '<div class="row" style="gap:6px">' +
+                  '<input type="text" class="inp" id="poNoteInp_' + esc(poKey) + '" placeholder="Ghi chú cho PO (VD: Gò Line 3 PX A2, Gò truyền thống 2, Giao thiếu 50 đôi...)" value="' + esc(curPoNote) + '" style="font-size:13px;padding:6px 10px">' +
+                  '<button type="button" class="btn btn-pri btn-sm" data-save-po-note="' + esc(poKey) + '" style="font-size:12px;padding:6px 12px;white-space:nowrap">💾 Lưu PO</button>' +
+                  (curPoNote ? '<button type="button" class="btn btn-ghost btn-sm" data-clear-po-note="' + esc(poKey) + '" style="font-size:12px;padding:6px 10px;color:var(--rose-600);white-space:nowrap">Xoá</button>' : '') +
+                '</div>' +
+              '</div>'
+            )
+          ) +
 
           (isReloThis ? (
             '<!-- Khung nhập Sắp kệ -->' +
@@ -5064,8 +5148,8 @@ function renderShelfModal() {
       '<button type="button" class="btn btn-pri btn-sm" id="smBtnCamBottom" style="background:linear-gradient(135deg,#0d9488,#0284c7);gap:6px;font-weight:800">📷 Mở Camera GitHub</button>' +
       '<button type="button" class="btn btn-pri btn-sm" id="smBtnIn">+ Nhập vào ô</button>' +
       '<button type="button" class="btn btn-ghost btn-sm" id="smBtnOut">− Xuất từ ô</button>' +
-      '<button type="button" class="btn btn-ghost btn-sm" id="smBtnCount">Kiểm kê ô</button>' +
-      '<button type="button" class="btn btn-ghost btn-sm" id="smBtnPrint">🖨️ In tem QR vị trí</button>' +
+      (!isWorker ? '<button type="button" class="btn btn-ghost btn-sm" id="smBtnCount">Kiểm kê ô</button>' : '') +
+      (!isWorker ? '<button type="button" class="btn btn-ghost btn-sm" id="smBtnPrint">🖨️ In tem QR vị trí</button>' : '') +
     '</div>' +
     '<button type="button" class="btn btn-ghost btn-sm" id="smBtnClose">Đóng</button>' +
   '</div>';
@@ -5245,6 +5329,10 @@ window.addEventListener('keydown', e => {
    TÌM KIẾM & DANH MỤC MŨ
    ===================================================================== */
 $$('#findTabs button').forEach(b => b.onclick = () => {
+  if (isWorkerUser() && b.dataset.ft === 'catalog') {
+    toast('Tài khoản Công nhân chỉ được sử dụng chức năng Tìm kiếm vị trí mũ', 'err');
+    return;
+  }
   $$('#findTabs button').forEach(x => x.classList.toggle('on', x === b));
   const isSearch = b.dataset.ft === 'search';
   $('#findSearchPane').hidden = !isSearch;
@@ -5290,7 +5378,7 @@ function renderFind(){
   if (!rows.length && !zeroCatalog.length) {
     el.innerHTML = rawQ
       ? '<div class="panel">Không tìm thấy kết quả nào khớp <b>' + esc(rawQ) + '</b>. Thử gõ Mã giày, PO, SO, hệ, khuôn hoặc mã kệ (VD: <span class="mono">SO8801</span>, <span class="mono">RB20231</span>, <span class="mono">K01</span>).</div>'
-      : '<div class="panel muted">Kho hiện chưa có tồn kho. Nhập hàng hoặc vào <b>Cài đặt → Nạp dữ liệu mẫu</b> để thử ngay.</div>';
+      : '<div class="panel muted">' + (isAdminUser() ? 'Kho hiện chưa có tồn kho. Nhập hàng hoặc vào <b>Cài đặt → Nạp dữ liệu mẫu</b> để thử ngay.' : 'Kho hiện chưa có tồn kho. Nhấn <b>Nhập kho</b> để bắt đầu.') + '</div>';
     return;
   }
 
@@ -5975,6 +6063,10 @@ function renderCatalog(){
 $('#catSearch').addEventListener('input', renderCatalog);
 $('#btnClearItem').onclick = () => { ['#itMa','#itTen','#itPo','#itSo','#itModel','#itMau','#itSize','#itSlkh'].forEach(id => { if ($(id)) $(id).value = ''; }); $('#itDvt').value = 'đôi'; };
 $('#btnSaveItem').onclick = async () => {
+  if (isWorkerUser()) {
+    toast('Tài khoản Công nhân không có quyền thêm/sửa danh mục mã mũ', 'err');
+    return;
+  }
   const ma = $('#itMa').value.trim().toUpperCase();
   if (!ma) { toast('Nhập mã mũ', 'err'); return; }
   const existing = itemOf(ma);
@@ -6240,6 +6332,10 @@ function getFilteredPlanRows(){
 }
 
 function renderPlan(){
+  if (isWorkerUser()) {
+    if ($('#vPlan')) $('#vPlan').hidden = true;
+    return;
+  }
   if ($('#planRoleBadge')) {
     $('#planRoleBadge').textContent = SESS ? (SESS.user.ten + ' · ' + roleLabel(SESS.user.vaiTro)) : 'Khách';
   }
@@ -6371,6 +6467,10 @@ function renderPlan(){
 }
 
 function openPlanEdit(ma){
+  if (isWorkerUser()) {
+    toast('Tài khoản Công nhân không có quyền Kiểm soát Kế hoạch (SLKH)', 'err');
+    return;
+  }
   const box = $('#planEditBox');
   if (box) box.hidden = false;
   const code = String(ma || '').trim().toUpperCase();
@@ -6608,7 +6708,10 @@ function printPlanReport(){
   w.document.close();
 }
 
-if ($('#btnPlanImport')) $('#btnPlanImport').onclick = () => { if ($('#planFileInput')) $('#planFileInput').click(); };
+if ($('#btnPlanImport')) $('#btnPlanImport').onclick = () => {
+  if (isWorkerUser()) { toast('Tài khoản Công nhân không có quyền Kiểm soát Kế hoạch (SLKH)', 'err'); return; }
+  if ($('#planFileInput')) $('#planFileInput').click();
+};
 if ($('#planFileInput')) $('#planFileInput').onchange = function(){
   const f = this.files && this.files[0];
   this.value = '';
@@ -6626,6 +6729,7 @@ if ($('#plSlkh')) {
   });
 }
 if ($('#btnPlanSaveItem')) $('#btnPlanSaveItem').onclick = async () => {
+  if (isWorkerUser()) { toast('Tài khoản Công nhân không có quyền Kiểm soát Kế hoạch (SLKH)', 'err'); return; }
   const ma = $('#plMa') ? $('#plMa').value.trim().toUpperCase() : '';
   if (!ma) { toast('Nhập Mã kho / PO trước khi lưu', 'err'); return; }
   const slkh = Math.max(0, Math.round(Number($('#plSlkh') ? $('#plSlkh').value : 0) || 0));
@@ -6646,6 +6750,7 @@ if ($('#btnPlanSaveItem')) $('#btnPlanSaveItem').onclick = async () => {
   toast('✔ Đã cập nhật SLKH cho ' + ma + ': ' + fmt(slkh) + ' đôi', 'ok');
 };
 if ($('#btnPlanSyncFromRecon')) $('#btnPlanSyncFromRecon').onclick = async () => {
+  if (isWorkerUser()) { toast('Tài khoản Công nhân không có quyền Kiểm soát Kế hoạch (SLKH)', 'err'); return; }
   const rows = getPlanControlRows().filter(r => r.slkhUnsaved && r.slkh > 0);
   if (!rows.length) return;
   await savePlanItems(rows.map(r => ({
@@ -6916,7 +7021,11 @@ if ($('#btnLogout')) $('#btnLogout').onclick = doLogout;
 async function loadUsers(){
   try {
     const list = await post('listUsers');
-    $('#userList').innerHTML = list.map(u => '<div class="li"><div class="li-grow"><b>' + esc(u.ma) + '</b> · ' + esc(u.ten) + '</div><span class="tag tag-ok">' + esc(roleLabel(u.vaiTro)) + '</span></div>').join('');
+    $('#userList').innerHTML = list.map(u => {
+      const r = normalizeRole(u.vaiTro);
+      const cls = r === 'ADMIN' ? 'tag-err' : (r === 'THUKHO' ? 'tag-KIEMKE' : 'tag-ok');
+      return '<div class="li"><div class="li-grow"><b>' + esc(u.ma) + '</b> · ' + esc(u.ten) + '</div><span class="tag ' + cls + '">' + esc(roleLabel(u.vaiTro)) + '</span></div>';
+    }).join('');
   } catch (e) { $('#userList').textContent = e.message; }
 }
 $('#btnAddUser').onclick = async () => {
